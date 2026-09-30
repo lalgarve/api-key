@@ -203,3 +203,28 @@ README).
 
 **Issues:** #12 atualizada (T000 resolvida, status aprovada); #14 aberta (v2, ideia de
 permissões por chave, sem spec ainda).
+
+Mais duas revisões, resolvendo a decisão em aberto de `004` e parte da de `002`:
+
+- `002-revoke-api-key`: agora não se pode revogar uma chave já expirada (`expires_at` no
+  passado) — falha com um exit code próprio (5), em vez de ser permitido como antes. E o
+  momento de revogação calculado (imediato ou via `--in-days`) nunca pode ultrapassar
+  `expires_at` — se ultrapassar, falha como erro de uso. As duas regras juntas garantem o
+  invariante `revoked_at <= expires_at` sempre que ambos existem, documentado em
+  `data-model.md`. Isso resolve a primeira das duas decisões em aberto da spec; a segunda
+  (múltiplas chaves ativas por cliente) continua aberta.
+- `004-list-api-keys`: acrescentado um terceiro status derivado, `expired` — antes só existiam
+  `active`/`revoked`, e uma chave expirada mas nunca revogada aparecia (de forma enganosa)
+  como `active`. Prioridade de derivação: `revoked` > `expired` > `active` (uma chave nunca
+  cai nos dois primeiros ao mesmo tempo, garantido pelo invariante de `002` acima). `--status`
+  ganha o valor `expired`; `--revoking-within-days` continua só válido com `--status active`.
+  Resolve a única decisão em aberto da spec — status passa de "rascunho" para "aprovada".
+
+Issues #11 e #13 atualizadas no GitHub refletindo as duas mudanças.
+
+**Commits (continuação):**
+- `b4f02ae` decision: forbid revoking expired keys, cap revoked_at at expires_at
+- `974fc1f` decision: add a third derived status, expired, to list-api-keys
+
+**Issues:** #11 atualizada (uma das duas decisões em aberto resolvida); #13 atualizada (T000
+resolvida, status aprovada).
