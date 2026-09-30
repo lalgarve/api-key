@@ -228,3 +228,18 @@ Issues #11 e #13 atualizadas no GitHub refletindo as duas mudanças.
 
 **Issues:** #11 atualizada (uma das duas decisões em aberto resolvida); #13 atualizada (T000
 resolvida, status aprovada).
+
+Confirmada a última decisão em aberto de `002-revoke-api-key`: múltiplas chaves ativas
+simultâneas por cliente são intencionais, não um descuido do modelo — não só como efeito
+colateral transitório de uma rotação (`003`) em andamento. Nada no comportamento de `revoke`
+muda (já opera por `--id`, não por cliente); a confirmação só remove a ambiguidade para `003`
+(risco de surpresa já mitigado por `--revoke-old-in-days` ser opt-in) e `004` (a listagem já
+mostra múltiplas linhas por cliente sem tratamento especial). T000 marcada resolvida; status
+da spec passa de "rascunho" para "aprovada" — nenhuma decisão em aberto restante nas quatro
+specs (`001`-`004`).
+
+**Commits (continuação):**
+- `9e6b401` decision: confirm multiple active keys per client are intentional
+
+**Issues:** #11 atualizada (T000 resolvida, status aprovada — nenhuma decisão em aberto
+restante nesta feature).
