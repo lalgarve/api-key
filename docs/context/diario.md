@@ -141,3 +141,41 @@ pepper, decisão de não usar lib de parsing de CLI, e o design do exit code doc
 - `a9f8404` docs: mark T003-T008 done, close out spec.md status
 
 **Issues:** #2 — todas as tarefas concluídas, pronta para fechar quando a PR mesclar.
+
+PR #10 mesclada em `main`, CI verde; Issue #2 fechada com todas as tarefas marcadas.
+
+## 2026-09-30
+
+**Resumo:** rascunho de três specs novas cobrindo o ciclo de vida de uma chave depois de
+emitida — hoje (`001`) uma chave só deixa de funcionar ao atingir `expires_at`, sem forma de
+invalidá-la antes disso nem de enxergar o que já foi emitido:
+
+- `specs/002-revoke-api-key/`: comando `revoke --id <id> [--in-days <N>]`, revogação imediata
+  ou agendada. Introduz a coluna `revoked_at` (nula = nunca revogada, passado = já revogada,
+  futuro = agendada — mesmo padrão de campo único já usado por `expires_at`). Também decide
+  generalizar o despacho de comandos da CLI (`CliCommand` + tabela de despacho em
+  `ApiKeyCliRunner`), já que `generate` deixa de ser o único comando.
+- `specs/003-auto-revoke-on-rotation/`: ao gerar uma chave nova para um cliente que já tem
+  chave ativa, as antigas são agendadas para revogação automaticamente (carência padrão ou
+  `--revoke-old-in-days`), sem exigir um `revoke` manual separado — depende de `002` (coluna
+  `revoked_at`, despacho de comandos).
+- `specs/004-list-api-keys/`: comando `list` com filtro padrão só-ativas, mais `--status
+  all|revoked`, `--client` e `--revoking-within-days` (chaves com revogação agendada dentro de
+  N dias) — também depende de `002`, e é a forma pretendida do operador descobrir o `--id` que
+  `revoke` exige.
+
+As três ficaram como rascunho (`Status: rascunho`), cada uma com decisões de produto em
+aberto sinalizadas em `spec.md` (valor padrão de carência de `003`; se múltiplas chaves ativas
+por cliente são intencionais; chave expirada aparecendo como "active" em `004`) — bloqueando
+o T000 de cada uma até serem confirmadas. Decisões técnicas (algoritmo de busca, onde cada
+comando novo mora nos pacotes, atomicidade da rotação) já resolvidas em cada `plan.md`. Issues-
+épico criadas: #11 (`002`), #12 (`003`), #13 (`004`), cada uma linkando as outras por
+dependência.
+
+**Commits:**
+- `83d7239` feat: add draft spec for revoke-api-key (002)
+- `9c61cd7` feat: add draft spec for auto-revoke-on-rotation (003)
+- `3e5a51a` feat: add draft spec for list-api-keys (004)
+
+**Issues:** #11, #12, #13 abertas (rascunho — T000 de cada uma bloqueada em decisões de
+produto pendentes de confirmação).
