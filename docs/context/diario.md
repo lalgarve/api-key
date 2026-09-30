@@ -118,3 +118,26 @@ seguindo a seção de pré-produção do `memory/constitution.md`). Exemplo troc
 
 **Issues:** #2 aberta (T000-T002 concluídas, T003-T008 pendentes); PR #8 mesclada, PR #9
 (esta renomeação) resolvendo conflito de merge com a #8 no próprio `diario.md`.
+
+## 2026-09-22
+
+**Resumo:** implementadas todas as tarefas restantes da feature `generate-api-key`
+(T003-T008) — a feature está completa. `ApiKeyHasher` (HMAC-SHA256, pepper via
+`API_KEY_HMAC_PEPPER`), `ApiKey`/`ApiKeyRepository` (persistência JPA), `GenerateCommand`
+(orquestração completa: parsing manual de `--client`/`--validity-days`, geração → hash →
+validade → persistência → impressão única da chave, retornando o exit code em vez de
+chamar `System.exit` direto) e `ApiKeyCliRunner` (adaptador fino que só sai do processo via
+`ProcessExiter` quando o código não é zero — decisão tomada especificamente para o smoke
+test de `main()` continuar seguro em qualquer caminho de sucesso). README ganhou seção de
+uso e o procedimento de backup do pepper (T008). `plan.md` fechado: nome da variável do
+pepper, decisão de não usar lib de parsing de CLI, e o design do exit code documentados.
+
+**Commits:**
+- `760c957` feat: implement HMAC-SHA256 hashing for generated keys (T003)
+- `7d3f282` feat: persist API keys via Spring Data JPA (T005)
+- `2f7b2e8` feat: implement the generate CLI command (T004, T006, T007)
+- `e0a3e58` decision: finalize pepper env var name and record CLI implementation decisions
+- `02e8df3` docs: document HMAC pepper backup procedure and CLI usage (T008)
+- `a9f8404` docs: mark T003-T008 done, close out spec.md status
+
+**Issues:** #2 — todas as tarefas concluídas, pronta para fechar quando a PR mesclar.

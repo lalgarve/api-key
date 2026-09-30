@@ -27,6 +27,36 @@ repositório para pedir ao professor da disciplina autorização para adotar SDD
 metodologia — ver o [documento de alinhamento do jogo-acoes](https://github.com/lalgarve/jogo-acoes/blob/docs/alinhamento-projeto-disciplina/docs/context/alinhamento-projeto-disciplina.md)
 para o contexto acadêmico completo.
 
+## Uso
+
+```
+export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
+java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90]
+```
+
+A chave em texto puro é impressa **uma única vez**, na hora da geração — guarde-a
+imediatamente, não há como recuperá-la depois. Ver
+[`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
+para o contrato completo (argumentos, saída, exit codes).
+
+## Operação: backup do pepper do HMAC
+
+O hash de cada chave é calculado com HMAC-SHA256 usando um pepper lido da variável de
+ambiente `API_KEY_HMAC_PEPPER` — mantido fora do banco de dados e do código-fonte de
+propósito (ver `specs/001-generate-api-key/plan.md`, "Onde fica o pepper do HMAC").
+
+**Perder o pepper é irreversível.** Sem ele, nenhum hash já persistido pode ser recalculado
+para validação — é equivalente a perder todas as chaves já emitidas; cada cliente precisaria
+receber uma chave nova. Trate o valor do pepper como um segredo crítico:
+
+- Guarde-o no gerenciador de segredos do ambiente onde este serviço roda (nunca em
+  repositório de código, nem em log).
+- Faça backup do pepper junto com — mas separado do — backup do banco de dados: os dois
+  juntos permitem restaurar a capacidade de validar chaves; o banco sozinho não.
+- Ao rotacionar o pepper deliberadamente, todas as chaves já emitidas deixam de validar —
+  equivalente a revogar todas de uma vez. Não há suporte (ainda) a múltiplos peppers válidos
+  simultaneamente para uma rotação gradual.
+
 ## Metodologia de desenvolvimento
 
 Este projeto usa Spec-Driven Development (SDD):

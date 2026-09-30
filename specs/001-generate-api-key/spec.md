@@ -1,6 +1,6 @@
 # Spec: generate-api-key
 
-**Status:** rascunho
+**Status:** aprovada — implementada (T000-T008 concluídas)
 **Issue:** #2
 
 ## Resumo

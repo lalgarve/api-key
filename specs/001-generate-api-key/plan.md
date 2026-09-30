@@ -17,16 +17,18 @@ futura biblioteca de leitura, para validar as chamadas que recebe de clientes (e
 | Pergunta | Decisão | Status | Raciocínio |
 |---|---|---|---|
 | Algoritmo de hash da chave | HMAC-SHA256 com pepper | resolvida | A chave já nasce com alta entropia (256 bits aleatórios) — diferente de senha de usuário, não precisa de um hash memory-hard/lento como Argon2, cujo custo defende principalmente contra senhas fracas e ataques de dicionário. HMAC-SHA256 é suficiente, mais simples e sem dependência externa (`javax.crypto` já no JDK). |
-| Onde fica o pepper do HMAC | Variável de ambiente (nome a definir na implementação, ex. `API_KEY_HMAC_PEPPER`), nunca no banco nem no código-fonte | resolvida | Se a tabela de chaves vazar sozinha, os hashes continuam inúteis sem o pepper — motivo de existir separado do salt/hash armazenado. |
+| Onde fica o pepper do HMAC | Variável de ambiente `API_KEY_HMAC_PEPPER`, nunca no banco nem no código-fonte | resolvida | Se a tabela de chaves vazar sozinha, os hashes continuam inúteis sem o pepper — motivo de existir separado do salt/hash armazenado. |
 | Prefixo da chave gerada | `dak_` ("Deployo API Key") | resolvida | Prefixo genérico do projeto, não amarrado ao primeiro consumidor (serviço de e-mail) — o objetivo declarado é um padrão reutilizável entre APIs internas futuras. |
 | Tamanho da chave | 32 bytes de entropia aleatória (256 bits), codificados em base64url, com o prefixo `dak_` concatenado antes | resolvida | Padrão de mercado para tokens de API (GitHub, Stripe usam entropia equivalente ou maior). |
 | Mecanismo de acesso a banco | Spring Data JPA + Hibernate | resolvida | Mesmo padrão do `jogo-acoes` — reaproveita conhecimento e convenções já estabelecidos entre os dois projetos do portfólio. O custo de start-up de um contexto Spring é irrelevante aqui: a CLI roda raramente, sob operação manual, não em um hot path. |
 | Motor de banco de dados | PostgreSQL nos perfis com infraestrutura real (`docker`, usado também em CI); H2 embarcado no perfil `sandbox` | resolvida | Mesmo padrão de nomenclatura de ambientes já adotado neste projeto (ver "Nomenclatura de ambientes" em `memory/constitution.md`) e replicado do `jogo-acoes` — H2 permite rodar testes/CLI sem depender de infraestrutura externa, Postgres real valida contra o motor efetivamente usado em produção. |
 | Ferramenta de migration | Flyway | resolvida | Mesma ferramenta do `jogo-acoes` — migrations versionadas em `src/main/resources/db/migration`, aplicadas automaticamente pelo Spring Boot na subida da aplicação. |
+| Biblioteca de parsing de argumentos da CLI | Nenhuma — parsing manual de `String[] args` | resolvida | Só dois argumentos (`--client`, `--validity-days`); o overhead de uma lib externa (picocli, etc.) não se paga pra essa superfície. Reavaliar se a CLI ganhar mais comandos/flags no futuro. |
+| Como obter exit codes precisos (0/1/2/3) sem quebrar a testabilidade de `main()` | `GenerateCommand.execute(args, out, err)` retorna o exit code (lógica pura, 100% testável sem tocar o processo); `ApiKeyCliRunner` (thin adapter, `CommandLineRunner`) chama `ProcessExiter.exit(code)` só quando o código não é zero | resolvida | `SpringApplication.exit()`/`System.exit()` chamado direto dentro do fluxo normal mataria a JVM de teste sempre que `DeployoApiKeyApplicationTests` invocasse `main()` num caminho de erro — por isso o smoke test (T001) só exercita o caminho de sucesso (código 0, nunca chama `exit`), e todo caminho de falha é testado chamando `GenerateCommand` diretamente, sem passar por `main()`. `ProcessExiter` é a interface que torna até o `ApiKeyCliRunner` testável sem sair do processo de teste. |
 
 Tarefas que dependem de uma decisão "em aberto" ficam bloqueadas nela em `tasks.md` — a
 decisão vira commit `decision:` quando resolvida, atualizando esta tabela no mesmo commit.
-As três decisões acima foram resolvidas assim, sem nenhuma ainda em aberto nesta feature.
+Nenhuma decisão desta feature ficou em aberto.
 
 ## Estrutura de módulos/pacotes
 

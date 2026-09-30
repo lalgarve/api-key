@@ -50,7 +50,7 @@ dak_9f2c1a4e7b3d8f0a1c5e6b7d8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a
 | `--client` ausente | `Error: --client is required.` | 1 |
 | `--client` vazio/em branco | `Error: --client must not be blank.` | 1 |
 | `--validity-days` inválido (zero, negativo ou não-numérico) | `Error: --validity-days must be a positive integer.` | 1 |
-| Pepper do HMAC não configurado | `Error: HMAC pepper is not configured. Set the <VAR> environment variable.` (nome exato da variável definido na implementação) | 2 |
+| Pepper do HMAC não configurado | `Error: HMAC pepper is not configured. Set the API_KEY_HMAC_PEPPER environment variable.` | 2 |
 | Falha ao persistir no banco | `Error: could not save the generated key. No key was printed.` | 3 |
 
 Em qualquer caso de erro, nenhuma linha é persistida e nenhuma chave em texto puro é
