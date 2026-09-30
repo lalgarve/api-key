@@ -28,10 +28,12 @@ Inalterado em relação a `001` — tabela isolada.
 
 ## Invariantes
 
-- `revoked_at`, quando não nulo, pode estar no passado (já revogada) ou no futuro (agendada)
-  — não há relação de ordem obrigatória entre `revoked_at` e `expires_at`; os dois campos são
-  independentes (uma chave pode estar revogada antes ou depois de expirar, ou nunca expirar e
-  ainda assim ser revogada).
+- `revoked_at`, quando não nulo, pode estar no passado (já revogada) ou no futuro (agendada).
+- `revoked_at`, quando não nulo, e `expires_at`, quando não nulo, obedecem `revoked_at <=
+  expires_at` — uma chave nunca tem uma revogação (efetiva ou agendada) marcada para depois do
+  próprio prazo de validade. Garantido pela aplicação antes de persistir (`RevokeCommand`
+  recusa tanto revogar uma chave já expirada quanto calcular um `revoked_at` que ultrapasse
+  `expires_at`), não por uma constraint de banco.
 - Uma chave nunca é removida da tabela ao ser revogada — `revoked_at` é a única mudança;
   `key_hash`, `client_name` e `created_at` permanecem como estavam.
 - Reagendar (`revoke` chamado de novo numa chave com `revoked_at` no futuro) sempre sobrescreve

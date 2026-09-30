@@ -18,11 +18,13 @@ comando real.
 | Como despachar múltiplos comandos na mesma CLI | Interface `CliCommand` (mesma assinatura de `GenerateCommand.execute(args, out, err)`), com uma tabela de despacho `Map<String, CliCommand>` por `args[0]` dentro de `ApiKeyCliRunner` | resolvida | Generaliza o padrão de retorno de exit code já validado em `001` (ver decisão de testabilidade lá) agora que existe um segundo comando de verdade — evita um `if/else` crescendo a cada comando novo. `GenerateCommand` e o novo `RevokeCommand` passam a implementar `CliCommand`. |
 | O que fazer quando `--in-days` é informado e a chave já tem uma revogação futura agendada | Sobrescreve (reagenda) `revoked_at` para o novo valor calculado — sem comparar com o valor anterior | resolvida | Permite ao operador corrigir/ajustar uma revogação já agendada com o mesmo comando, sem precisar de uma flag separada de "reagendar". |
 | Revogar uma chave já revogada (no passado) | Falha com erro — nada é alterado | resolvida | Evita mascarar um engano do operador (ex.: achar que está revogando algo que na verdade já foi revogado por outro motivo/sessão). |
+| Revogar uma chave já expirada | Falha com erro — nada é alterado | resolvida | Uma chave expirada não tem mais nada a revogar; tratar como sucesso silencioso (sem mudar nada) esconderia do operador que o comando não fez efeito nenhum. |
+| `revoked_at` calculado pode ultrapassar `expires_at`? | Não — se o valor calculado (imediato ou via `--in-days`) for posterior a `expires_at`, a operação falha antes de persistir | resolvida | Agendar uma revogação para depois do momento em que a chave já deixaria de funcionar por conta própria não tem efeito prático — é sinal de um `--in-days` escolhido sem olhar para a validade da chave; melhor recusar do que aceitar silenciosamente um valor sem efeito. |
+| Ordem de verificação: já revogada vs. já expirada vs. `--in-days` além da expiração | Nessa ordem: não encontrada → já revogada → já expirada → (se passou pelas anteriores) calcula o novo `revoked_at` e checa se ultrapassa `expires_at` | resolvida | Já revogada é o estado mais específico (uma ação explícita já aconteceu) e é checado primeiro; já expirada é um estado mais "passivo" checado em seguida; só então faz sentido calcular e validar um novo valor. |
 | Onde vive a lógica de revogação em relação a `issuance` | `RevokeCommand` num novo pacote `io.deployo.apikey.management`, reutilizando `ApiKey`/`ApiKeyRepository` de `io.deployo.apikey.issuance` sem movê-los | resolvida | `ApiKey`/`ApiKeyRepository` já existem em `issuance`; só há hoje uma segunda frente consumindo-os (`management`), não justifica extrair para um pacote neutro ainda — revisitar quando a frente de "Leitura" (validação, `001`/plan.md) também precisar deles. |
 
-Decisões marcadas "em aberto" em `spec.md` (comportamento com chave expirada; múltiplas
-chaves ativas por cliente) são de produto, não técnicas — bloqueiam T000 desta feature, não
-esta tabela.
+A decisão em aberto restante em `spec.md` (múltiplas chaves ativas por cliente) é de produto,
+não técnica — bloqueia T000 desta feature, não esta tabela.
 
 ## Estrutura de módulos/pacotes
 

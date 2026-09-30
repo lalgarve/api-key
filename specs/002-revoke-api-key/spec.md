@@ -62,6 +62,18 @@ Scenario: key already has a future revocation scheduled
   Given a key with id 3 scheduled to be revoked in 30 days
   When the operator runs "revoke --id 3 --in-days 5"
   Then the key's revocation moment is updated to 5 days from now (the schedule is replaced)
+
+Scenario: key has already expired
+  Given a key with id 3 whose expires_at is already in the past
+  When the operator runs "revoke --id 3" (with or without "--in-days")
+  Then it fails with an already-expired exit code
+  And nothing is changed
+
+Scenario: --in-days would schedule the revocation past the key's own expiration
+  Given a key with id 3 whose expires_at is 10 days from now, not yet revoked
+  When the operator runs "revoke --id 3 --in-days 20"
+  Then it fails with a usage-error exit code
+  And nothing is changed
 ```
 
 ## Requisitos funcionais
@@ -78,6 +90,12 @@ Scenario: key already has a future revocation scheduled
   **substitui** o agendamento pelo novo valor calculado.
 - FR6: Revogar uma chave não apaga a linha correspondente — só marca o momento de revogação,
   preservando o histórico (quem foi o cliente, quando foi criada, etc.).
+- FR7: Revogar uma chave cujo `expires_at` já passou falha — nada é alterado, mesmo que a
+  chave nunca tenha sido explicitamente revogada antes. Uma chave expirada não tem mais nada a
+  revogar.
+- FR8: O momento de revogação calculado (imediato = agora, ou `agora + N dias` via
+  `--in-days`) nunca pode ser posterior a `expires_at`, quando definido. Se o cálculo resultar
+  num momento posterior, a operação falha antes de persistir qualquer alteração.
 
 ## Requisitos não-funcionais
 
@@ -98,9 +116,5 @@ Scenario: key already has a future revocation scheduled
 
 ## Decisões em aberto
 
-- Revogar uma chave que já passou do próprio `expires_at` (expirou naturalmente, nunca foi
-  revogada manualmente) — deveria ser permitido normalmente (proposta atual, implícita nos
-  cenários acima) ou deveria falhar com "nada a revogar, a chave já expirou"? Expiração e
-  revogação são conceitos independentes nesta proposta; a confirmar se isso é aceitável.
 - O modelo assume que um cliente pode ter mais de uma chave ativa simultaneamente (nada aqui
   impede isso) — a confirmar se essa é a intenção, já que afeta também `003` e `004`.
