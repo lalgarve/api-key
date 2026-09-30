@@ -179,3 +179,27 @@ dependência.
 
 **Issues:** #11, #12, #13 abertas (rascunho — T000 de cada uma bloqueada em decisões de
 produto pendentes de confirmação).
+
+Revisão de `003-auto-revoke-on-rotation`: a autora simplificou a regra, resolvendo as duas
+decisões em aberto de uma vez — `--revoke-old-in-days` passa a ser opcional **sem valor
+padrão**; a rotina de auto-revogação só roda quando o argumento é informado explicitamente.
+Sem ele, `generate` se comporta exatamente como em `001`, sem tocar em nenhuma chave
+existente. Isso elimina de uma vez a pergunta de "qual o padrão" e a de "como desabilitar" —
+omitir o argumento é o próprio opt-out. `spec.md`/`plan.md`/`contracts/cli-commands.md`/
+`tasks.md` atualizados; status da spec passa de "rascunho" para "aprovada" (nenhuma decisão em
+aberto restante); T000 marcada resolvida na Issue #12.
+
+Criada também a Issue #14, com a label `v2` (nova, sem existir antes no repositório — o
+próprio `issue_write` a criou ao ser referenciada), capturando uma ideia para uma versão
+futura: permissões/escopo por chave (ex.: uma chave do depto de marketing podendo alterar
+templates de qualquer serviço; um cliente restrito a só enviar e-mails internos). Ainda sem
+`spec.md` — registrada como ideia para não se perder antes de `001`-`004` serem implementadas,
+com as perguntas em aberto já anotadas no corpo da Issue (formato da permissão, onde a
+autorização é avaliada, como isso tensiona com o modelo de implantação por serviço dedicado do
+README).
+
+**Commits (continuação):**
+- `535e170` decision: make auto-revoke-on-rotation opt-in, drop the default grace period
+
+**Issues:** #12 atualizada (T000 resolvida, status aprovada); #14 aberta (v2, ideia de
+permissões por chave, sem spec ainda).
