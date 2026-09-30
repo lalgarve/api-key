@@ -1,6 +1,6 @@
 # Spec: revoke-api-key
 
-**Status:** rascunho
+**Status:** aprovada
 **Issue:** #11
 
 ## Resumo
@@ -116,5 +116,9 @@ Scenario: --in-days would schedule the revocation past the key's own expiration
 
 ## Decisões em aberto
 
-- O modelo assume que um cliente pode ter mais de uma chave ativa simultaneamente (nada aqui
-  impede isso) — a confirmar se essa é a intenção, já que afeta também `003` e `004`.
+Nenhuma — confirmado que um cliente pode ter mais de uma chave ativa simultaneamente de
+propósito (não só como efeito colateral transitório de uma rotação em andamento). O modelo já
+não impunha nenhuma restrição nesse sentido; esta feature (`revoke`, que opera por `--id`, não
+por cliente) não muda de comportamento com a confirmação — o impacto real é em `003` (ver
+`plan.md`, risco de surpresa mitigado por `--revoke-old-in-days` ser opt-in) e em `004` (a
+listagem já mostra múltiplas linhas por cliente sem tratamento especial).

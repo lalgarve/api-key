@@ -2,7 +2,7 @@
 
 | ID | Descrição | Depende de | Paralelizável | Issue |
 |---|---|---|---|---|
-| T000 | Resolver a decisão em aberto restante de `spec.md` (múltiplas chaves ativas por cliente) — já resolvida: revogar chave já expirada falha, e `--in-days` não pode ultrapassar `expires_at` | — | | #11 |
+| ~~T000~~ | Resolver as decisões em aberto de `spec.md` — resolvida: revogar chave já expirada falha; `--in-days` não pode ultrapassar `expires_at`; múltiplas chaves ativas por cliente são intencionais | — | | #11 |
 | T001 | Criar migration Flyway `V2` acrescentando `revoked_at` a `api_keys` (`data-model.md`) | — | [P] | #11 |
 | T002 | Refatorar o despacho de comandos da CLI: interface `CliCommand` + tabela de despacho por `args[0]` em `ApiKeyCliRunner` (sem mudar o comportamento observável de `generate`) | — | [P] | #11 |
 | T003 | Implementar `RevokeCommand` (parsing de `--id`/`--in-days`, validações, busca da chave, checar já-revogada/já-expirada, calcular e validar `revoked_at` contra `expires_at`, aplicar/reagendar, persistência) | T001, T002 | | #11 |

@@ -23,8 +23,7 @@ comando real.
 | Ordem de verificação: já revogada vs. já expirada vs. `--in-days` além da expiração | Nessa ordem: não encontrada → já revogada → já expirada → (se passou pelas anteriores) calcula o novo `revoked_at` e checa se ultrapassa `expires_at` | resolvida | Já revogada é o estado mais específico (uma ação explícita já aconteceu) e é checado primeiro; já expirada é um estado mais "passivo" checado em seguida; só então faz sentido calcular e validar um novo valor. |
 | Onde vive a lógica de revogação em relação a `issuance` | `RevokeCommand` num novo pacote `io.deployo.apikey.management`, reutilizando `ApiKey`/`ApiKeyRepository` de `io.deployo.apikey.issuance` sem movê-los | resolvida | `ApiKey`/`ApiKeyRepository` já existem em `issuance`; só há hoje uma segunda frente consumindo-os (`management`), não justifica extrair para um pacote neutro ainda — revisitar quando a frente de "Leitura" (validação, `001`/plan.md) também precisar deles. |
 
-A decisão em aberto restante em `spec.md` (múltiplas chaves ativas por cliente) é de produto,
-não técnica — bloqueia T000 desta feature, não esta tabela.
+Nenhuma decisão em aberto restante — ver `spec.md`.
 
 ## Estrutura de módulos/pacotes
 
