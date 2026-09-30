@@ -1,13 +1,13 @@
 # Spec: list-api-keys
 
-**Status:** rascunho
+**Status:** aprovada
 **Issue:** #13
 
 ## Resumo
 
-Um comando de CLI lista as API-KEYs já emitidas, com filtros por status (ativa/revogada/
-todas), por cliente, e por proximidade de uma revogação agendada — sem nunca expor o hash nem
-a chave em texto puro.
+Um comando de CLI lista as API-KEYs já emitidas, com filtros por status (ativa/expirada/
+revogada/todas), por cliente, e por proximidade de uma revogação agendada — sem nunca expor o
+hash nem a chave em texto puro.
 
 ## Motivação
 
@@ -20,19 +20,29 @@ de dados diretamente, fora do fluxo normal de operação desta ferramenta.
 
 ```gherkin
 Scenario: list with no filters shows only active keys
-  Given some active keys and some revoked keys exist
+  Given some active keys, some expired keys and some revoked keys exist
   When the operator runs "list"
   Then only the active keys are shown
 
 Scenario: list all keys
-  Given some active keys and some revoked keys exist
+  Given some active keys, some expired keys and some revoked keys exist
   When the operator runs "list --status all"
-  Then both active and revoked keys are shown
+  Then active, expired and revoked keys are all shown
 
 Scenario: list only revoked keys
   Given some active keys and some revoked keys exist
   When the operator runs "list --status revoked"
   Then only the revoked keys are shown
+
+Scenario: list only expired keys
+  Given some active keys and some expired-but-never-revoked keys exist
+  When the operator runs "list --status expired"
+  Then only the expired keys are shown
+
+Scenario: a key that is both expired and revoked shows as revoked
+  Given a key whose expires_at is in the past and whose revoked_at is also in the past
+  When the operator runs "list --status all"
+  Then that key's STATUS is "revoked", not "expired"
 
 Scenario: list filtered by client
   Given keys exist for clients "jogo-acoes" and "billing"
@@ -46,6 +56,11 @@ Scenario: list keys scheduled to be revoked soon
 
 Scenario: --revoking-within-days combined with --status revoked is invalid
   Given the operator runs "list --status revoked --revoking-within-days 30"
+  When the command is executed
+  Then it fails with a usage-error exit code
+
+Scenario: --revoking-within-days combined with --status expired is invalid
+  Given the operator runs "list --status expired --revoking-within-days 30"
   When the command is executed
   Then it fails with a usage-error exit code
 
@@ -63,20 +78,29 @@ Scenario: --revoking-within-days is invalid
 
 ## Requisitos funcionais
 
-- FR1: Sem argumentos, `list` mostra só chaves ativas (`revoked_at` nulo ou no futuro — mesma
-  definição de "ativa" usada em `002-revoke-api-key`/`003-auto-revoke-on-rotation`).
-- FR2: `--status` aceita `active` (padrão explícito), `revoked` (`revoked_at` no passado), ou
-  `all` (sem filtro de status).
-- FR3: `--client <nome>` filtra por `client_name` exato, combinável com `--status`.
-- FR4: `--revoking-within-days <N>` mostra só chaves ativas cujo `revoked_at` está no futuro e
-  dentro de `N` dias a partir de agora (agendadas para revogação em breve). `N` deve ser um
-  inteiro positivo.
-- FR5: `--revoking-within-days` só é aceito com `--status` omitido ou `--status active`;
-  qualquer outra combinação (`revoked` ou `all`) falha com erro de uso, já que uma chave já
-  revogada ou fora do filtro de "ativa" não tem uma "revogação futura" a mostrar.
-- FR6: A saída nunca inclui `key_hash` nem a chave em texto puro — só `id`, cliente, data de
-  criação, data de expiração (quando houver) e informação de revogação (quando houver).
-- FR7: Quando nenhuma chave corresponde aos filtros, o comando termina com sucesso (não é
+- FR1: Cada chave tem um status derivado, calculado a partir de `revoked_at` e `expires_at`
+  (nunca armazenado), nesta ordem de prioridade:
+  1. **`revoked`** — `revoked_at` não nulo e já no passado.
+  2. **`expired`** — não é `revoked` pela regra acima, e `expires_at` não nulo e já no passado.
+  3. **`active`** — qualquer outro caso (inclui `revoked_at` nulo ou ainda no futuro —
+     revogação agendada mas ainda não em vigor).
+  Como `002-revoke-api-key` garante `revoked_at <= expires_at` quando ambos existem (ver
+  `data-model.md` de `002`), uma chave nunca é `expired` e `revoked` ao mesmo tempo — a
+  prioridade acima só desempata o caso em que ambos os momentos já passaram.
+- FR2: Sem argumentos, `list` mostra só chaves com status `active`.
+- FR3: `--status` aceita `active` (padrão explícito), `expired`, `revoked`, ou `all` (sem
+  filtro de status).
+- FR4: `--client <nome>` filtra por `client_name` exato, combinável com `--status`.
+- FR5: `--revoking-within-days <N>` mostra só chaves com status `active` cujo `revoked_at`
+  está no futuro e dentro de `N` dias a partir de agora (agendadas para revogação em breve).
+  `N` deve ser um inteiro positivo.
+- FR6: `--revoking-within-days` só é aceito com `--status` omitido ou `--status active`;
+  qualquer outra combinação (`expired`, `revoked` ou `all`) falha com erro de uso, já que só
+  uma chave `active` pode ter uma revogação futura agendada.
+- FR7: A saída nunca inclui `key_hash` nem a chave em texto puro — só `id`, cliente, data de
+  criação, data de expiração (quando houver), informação de revogação (quando houver) e o
+  status derivado (FR1).
+- FR8: Quando nenhuma chave corresponde aos filtros, o comando termina com sucesso (não é
   erro) e imprime uma mensagem indicando que a lista está vazia.
 
 ## Requisitos não-funcionais
@@ -98,8 +122,5 @@ vazia não é tratada como erro, e nenhuma saída expõe hash ou chave em texto 
 
 ## Decisões em aberto
 
-- Uma chave já expirada (`expires_at` no passado) mas nunca revogada aparece nesta listagem
-  como "active", já que o status aqui reflete só revogação, não expiração — isso pode
-  confundir o operador (a chave aparece "ativa" mas já não autentica mais). A confirmar se
-  isso é aceitável como está, ou se a listagem deveria derivar um terceiro estado (ex.
-  "expired") combinando os dois campos.
+Nenhuma — resolvida pela introdução do status `expired` (FR1): uma chave expirada não
+aparece mais como `active`.

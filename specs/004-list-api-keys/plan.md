@@ -14,7 +14,7 @@ por `002-revoke-api-key` (T001). Depende também da tabela de despacho de comand
 | Pergunta | Decisão | Status | Raciocínio |
 |---|---|---|---|
 | Formato de saída | Texto tabular alinhado por colunas, sem JSON | resolvida | Consistente com a saída de `generate`/`revoke`, já em texto simples; um `--format json` fica para quando (se) surgir um consumidor automatizado — não pedido agora. |
-| Como o status (ativa/revogada) é derivado | Calculado em memória a partir de `revoked_at` comparado a `Instant.now()` no momento da consulta — não é uma coluna própria | resolvida | Evita um job/trigger para manter um campo de status sincronizado; mesmo padrão implícito já usado para `expires_at` desde `001` (a checagem é responsabilidade de quem lê, não de uma coluna derivada persistida). |
+| Como o status (ativa/expirada/revogada) é derivado | Calculado em memória a partir de `revoked_at` e `expires_at` comparados a `Instant.now()` no momento da consulta — não é uma coluna própria. Prioridade: `revoked` (se `revoked_at` já passou) > `expired` (senão, se `expires_at` já passou) > `active` (caso contrário) | resolvida | Evita um job/trigger para manter um campo de status sincronizado; mesmo padrão implícito já usado para `expires_at` desde `001` (a checagem é responsabilidade de quem lê, não de uma coluna derivada persistida). A prioridade `revoked` > `expired` é só um desempate teórico — `002-revoke-api-key` já garante `revoked_at <= expires_at`, então uma chave nunca chega viva nos dois critérios ao mesmo tempo sem que `revoked` já tenha decidido primeiro. |
 | Ordenação padrão | `created_at` ascendente | resolvida | Ordem cronológica de emissão — previsível, sem precisar de uma flag extra agora. |
 | Como filtrar por status/cliente/janela de revogação no banco | Consulta única (`findAll`/`findByClientName`, conforme presença de `--client`) seguida de filtragem em memória para status e janela de revogação | resolvida | Mesmo racional de escala pequena já documentado em `001`/`003` (poucos clientes, poucas chaves por cliente) — não compensa uma consulta JPQL/Criteria dinâmica para combinar poucos filtros opcionais. |
 
@@ -28,7 +28,3 @@ em `002-revoke-api-key` para `RevokeCommand`), registrado na tabela de despacho 
 
 - Filtrar em memória em vez de no banco não escala para um volume grande de chaves — aceitável
   dado o contexto declarado no README (poucos clientes esperados); revisitar se isso mudar.
-- Misturar o conceito de "ativa" (não revogada) com "válida" (não revogada e não expirada) foi
-  conscientemente evitado nesta versão (ver decisão em aberto em `spec.md`) — a listagem
-  reflete só revogação, podendo mostrar como "active" uma chave que uma leitura real já
-  rejeitaria por expiração.
