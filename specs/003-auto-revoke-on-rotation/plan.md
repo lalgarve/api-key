@@ -16,8 +16,8 @@ de `001-generate-api-key`), acrescentando um passo depois da persistência da ch
 | Onde roda a lógica de auto-revogação | Dentro do fluxo de `generate`, depois de persistir a chave nova, na mesma transação | resolvida | Atende o FR6 (atomicidade) sem introduzir um mecanismo de coordenação separado — já é o padrão natural de uma transação Spring Data JPA. |
 | Como buscar as chaves ativas de um cliente | Método derivado em `ApiKeyRepository`: `findByClientNameAndRevokedAtIsNullOrRevokedAtGreaterThan(String clientName, Instant now)` | resolvida | Volume de chaves por cliente é pequeno (poucas dezenas no limite, dado o contexto do projeto — ver README); não compensa uma consulta JPQL/Criteria customizada para este filtro. |
 | Onde vive a lógica de "calcular novo `revoked_at` sem adiar um agendamento existente" (FR4) | Colaborador dedicado, não dentro de `GenerateCommand` diretamente | resolvida | `GenerateCommand` já orquestra vários passos (geração, hash, validade, persistência); isolar essa regra num colaborador próprio mantém cada peça testável isoladamente em vez de crescer ainda mais uma classe já com várias responsabilidades. |
-| Transação cobrindo geração + revogação das antigas | `@Transactional` no método de execução do comando | resolvida | Requisito direto do FR6; sem isso, uma falha a meio do processo deixaria estado parcial (chave nova viva, revogação de uma antiga perdida). |
-| Valor padrão de `N` dias de carência | em aberto — ver `spec.md` | em aberto | Decisão de produto, não técnica; bloqueia a implementação de FR2. |
+| Transação cobrindo geração + revogação das antigas | `@Transactional` no método de execução do comando | resolvida | Requisito direto do FR7; sem isso, uma falha a meio do processo deixaria estado parcial (chave nova viva, revogação de uma antiga perdida). |
+| Valor padrão de `N` dias de carência | Não existe — `--revoke-old-in-days` é opcional e, quando omitido, a rotina inteira não roda (FR1) | resolvida | Evita a pergunta de produto "qual carência padrão" por completo, e dobra como o próprio mecanismo de opt-out: gerar sem o argumento nunca tem efeito colateral, sem precisar de uma flag separada. |
 
 ## Estrutura de módulos/pacotes
 
@@ -30,11 +30,12 @@ pelo fluxo de `revoke` — mesmo dado (`revoked_at`) e mesma tabela, front difer
 
 ## Riscos e trade-offs
 
-- Sem uma flag de opt-out (ver decisão em aberto em `spec.md`), um cliente que legitimamente
-  precise de múltiplas chaves ativas simultâneas e de propósito (não uma rotação em
-  andamento) seria surpreendido por chaves antigas sendo agendadas para revogação a cada
-  `generate`. Mitigação até a decisão ser tomada: nenhuma — aceitar o risco de surpresa é
-  consciente até o valor padrão e o mecanismo de opt-out (se houver) serem definidos.
+- Como a rotina é opt-in por chamada (FR1), um operador que queira rotacionar precisa lembrar
+  de passar `--revoke-old-in-days` toda vez — o trade-off inverso da versão anterior deste
+  plano (que arriscava surpreender clientes com múltiplas chaves de propósito). Aceito
+  conscientemente: nunca alterar uma chave existente sem pedido explícito é mais seguro por
+  padrão do que automatizar silenciosamente, mesmo custando a conveniência de um padrão
+  automático para o caso comum de rotação.
 - Buscar e atualizar múltiplas linhas dentro da mesma transação que insere a chave nova
   aumenta o escopo de bloqueio da transação de `generate` — aceitável dado o volume pequeno
   esperado (poucas chaves por cliente), revisitar se isso mudar.

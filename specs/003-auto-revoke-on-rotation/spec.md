@@ -1,24 +1,27 @@
 # Spec: auto-revoke-on-rotation
 
-**Status:** rascunho
+**Status:** aprovada
 **Issue:** #12
 
 ## Resumo
 
-Ao gerar uma nova chave para um cliente que já tem alguma chave ativa, a(s) chave(s) antiga(s)
-desse cliente são agendadas automaticamente para revogação depois de um prazo de carência —
-por padrão, ou informado explicitamente — sem exigir uma chamada manual a `revoke`
-(`002-revoke-api-key`).
+Ao gerar uma nova chave para um cliente que já tem alguma chave ativa, o operador pode pedir,
+no mesmo comando (`--revoke-old-in-days <N>`), que a(s) chave(s) antiga(s) desse cliente sejam
+agendadas automaticamente para revogação depois de um prazo de carência — sem exigir uma
+chamada manual separada a `revoke` (`002-revoke-api-key`). Sem esse argumento, `generate`
+funciona exatamente como em `001`: gera a chave nova e não toca em nenhuma chave existente.
 
 ## Motivação
 
-Sem isso, trocar a chave de um cliente é um processo manual de duas etapas: gerar a nova
-chave, e lembrar de revogar a antiga separadamente com `revoke`. Esquecer o segundo passo
-deixa uma chave antiga válida indefinidamente mesmo depois do cliente já ter adotado a nova —
-o oposto do que "rotação de chave" deveria garantir. Automatizar o agendamento da revogação da
-chave antiga, com uma carência configurável, cobre o caso comum (trocar de chave sem
-downtime: as duas funcionam durante a janela de transição) sem exigir que o operador se lembre
-de nada depois de rodar `generate`.
+Uma rotação de chave deliberada (trocar a chave em uso por uma nova, com uma janela de
+transição) hoje exige dois comandos separados: gerar a nova e revogar a antiga manualmente com
+`revoke` — sujeito a esquecer o segundo passo, deixando a chave antiga válida indefinidamente.
+Juntar os dois passos num só comando (`generate --revoke-old-in-days N`) cobre esse caso sem
+exigir que o operador se lembre de nada depois. Isso só deve acontecer quando pedido: `generate`
+sem esse argumento é usado também para o caso comum de simplesmente adicionar uma chave nova
+para um cliente (ex.: múltiplos consumidores do mesmo cliente, chave adicional antes de
+desativar a antiga manualmente mais tarde) — nesse caso nenhuma chave existente deveria ser
+tocada só porque o cliente já tinha uma.
 
 ## Cenários (comportamento esperado)
 
@@ -29,13 +32,13 @@ Scenario: generate for a client with no pre-existing active key
   Then the new key is created as usual
   And no other row is changed
 
-Scenario: generate for a client with one existing active key, using the default grace period
+Scenario: generate for a client with an existing active key, without --revoke-old-in-days
   Given client "jogo-acoes" has one active key (id 3), not revoked nor scheduled
-  When the operator runs "generate --client jogo-acoes" without "--revoke-old-in-days"
+  When the operator runs "generate --client jogo-acoes" (no "--revoke-old-in-days")
   Then the new key is created
-  And key id 3 has its revocation scheduled for the default grace period from now
+  And key id 3 is left untouched — same outcome as if it didn't exist
 
-Scenario: generate with a custom grace period
+Scenario: generate with an explicit grace period
   Given client "jogo-acoes" has one active key (id 3)
   When the operator runs "generate --client jogo-acoes --revoke-old-in-days 3"
   Then key id 3 has its revocation scheduled for 3 days from now
@@ -47,12 +50,12 @@ Scenario: generate with an immediate cutover
 
 Scenario: generate for a client with multiple pre-existing active keys
   Given client "jogo-acoes" has active keys with id 3 and id 5
-  When the operator runs "generate --client jogo-acoes"
-  Then both key id 3 and key id 5 have their revocation scheduled for the same grace period
+  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 7"
+  Then both key id 3 and key id 5 have their revocation scheduled for 7 days from now
 
 Scenario: an old key already has an earlier scheduled revocation
   Given client "jogo-acoes" has an active key (id 3) already scheduled to be revoked in 2 days
-  When the operator runs "generate --client jogo-acoes" with a default/custom grace period of 7 days
+  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 7"
   Then key id 3's revocation stays scheduled for 2 days from now (not pushed back to 7)
 
 Scenario: --revoke-old-in-days is invalid
@@ -69,23 +72,26 @@ Scenario: persisting the old-key revocation fails
 
 ## Requisitos funcionais
 
-- FR1: Ao gerar uma chave nova com sucesso, o sistema busca todas as chaves atualmente ativas
-  do mesmo `client_name` (ver definição de "ativa" em `002-revoke-api-key`: `revoked_at` nulo
-  ou no futuro), excluindo a chave recém-criada.
-- FR2: Cada chave ativa encontrada tem seu `revoked_at` definido para `agora + N dias`, onde
-  `N` vem de `--revoke-old-in-days` quando informado, ou do valor padrão do sistema quando
-  omitido (ver "Decisões em aberto").
-- FR3: `--revoke-old-in-days` aceita `0` (revogação imediata) ou um inteiro positivo; qualquer
-  outro valor (negativo, não numérico) é erro de uso — nenhuma chave é gerada nem alterada.
-- FR4: Se uma chave antiga já tem `revoked_at` no futuro e esse valor é **anterior** ao novo
+- FR1: A rotina de auto-revogação só roda quando o operador informa `--revoke-old-in-days`
+  explicitamente. Sem esse argumento, `generate` se comporta exatamente como em `001` —
+  nenhuma chave existente é lida ou alterada, não há valor padrão que entre em ação sozinho.
+- FR2: Quando `--revoke-old-in-days` é informado e a chave nova é gerada com sucesso, o
+  sistema busca todas as chaves atualmente ativas do mesmo `client_name` (ver definição de
+  "ativa" em `002-revoke-api-key`: `revoked_at` nulo ou no futuro), excluindo a chave
+  recém-criada.
+- FR3: Cada chave ativa encontrada tem seu `revoked_at` definido para `agora + N dias`, onde
+  `N` é o valor informado em `--revoke-old-in-days`.
+- FR4: `--revoke-old-in-days`, quando informado, aceita `0` (revogação imediata) ou um inteiro
+  positivo; qualquer outro valor (negativo, não numérico) é erro de uso — nenhuma chave é
+  gerada nem alterada.
+- FR5: Se uma chave antiga já tem `revoked_at` no futuro e esse valor é **anterior** ao novo
   `agora + N` calculado, o valor existente é preservado — a rotina nunca adia uma revogação já
   mais próxima.
-- FR5: A chave recém-gerada nunca é afetada por esta rotina — só chaves pré-existentes do
+- FR6: A chave recém-gerada nunca é afetada por esta rotina — só chaves pré-existentes do
   mesmo cliente podem ser agendadas para revogação.
-- FR6: A geração da chave nova e o agendamento de revogação das chaves antigas do mesmo
-  cliente são uma única operação atômica — se qualquer parte falhar, nada é persistido.
-- FR7: Este comportamento roda sempre que `generate` é chamado para um cliente com alguma
-  chave ativa — não há hoje uma forma de desabilitá-lo por completo (ver decisão em aberto).
+- FR7: Quando acionada, a geração da chave nova e o agendamento de revogação das chaves
+  antigas do mesmo cliente são uma única operação atômica — se qualquer parte falhar, nada é
+  persistido.
 
 ## Requisitos não-funcionais
 
@@ -103,13 +109,6 @@ Scenario: persisting the old-key revocation fails
 
 ## Decisões em aberto
 
-- Valor padrão de `N` (dias de carência) quando `--revoke-old-in-days` é omitido — proposta:
-  7 dias, a confirmar.
-- Deveria existir uma forma de desabilitar completamente a rotação automática (manter uma
-  chave antiga ativa para sempre, mesmo gerando uma nova para o mesmo cliente)? Hoje a única
-  forma de aproximar isso é informar um `N` muito grande — não há uma flag de opt-out
-  explícita. Relevante se a intenção for, em algum momento, permitir múltiplas chaves ativas
-  de propósito para o mesmo cliente (mesma decisão em aberto em `002-revoke-api-key`).
-- Onde o valor padrão de `N` deveria morar — constante no código, variável de ambiente
-  (mesmo padrão do pepper do HMAC em `001`), ou argumento de configuração da aplicação — a
-  confirmar junto da definição do valor em si.
+Nenhuma nesta versão — `--revoke-old-in-days` ser opcional e sem valor padrão resolve, ao
+mesmo tempo, a pergunta de qual seria a carência padrão (não existe nenhuma) e a de como
+desabilitar a rotina (basta omitir o argumento; é o comportamento padrão de `generate`).

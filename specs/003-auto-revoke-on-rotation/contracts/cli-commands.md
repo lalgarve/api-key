@@ -17,7 +17,7 @@ deployo-api-key generate --client <nome-do-cliente> [--validity-days <dias>] [--
 
 | Argumento | Obrigatório | Descrição |
 |---|---|---|
-| `--revoke-old-in-days` | não | Dias de carência, a partir de agora, até que as chaves já ativas do mesmo cliente sejam revogadas. Inteiro `>= 0` (`0` = revogação imediata). Se omitido, usa o valor padrão do sistema (ver `plan.md`). Sem efeito se o cliente não tiver nenhuma chave ativa. |
+| `--revoke-old-in-days` | não | Dias de carência, a partir de agora, até que as chaves já ativas do mesmo cliente sejam revogadas. Inteiro `>= 0` (`0` = revogação imediata). **Se omitido, a rotina inteira não roda** — nenhuma chave existente é lida ou alterada, mesmo que o cliente já tenha uma chave ativa (não existe valor padrão). Sem efeito também se o cliente não tiver nenhuma chave ativa. |
 
 **Saída (stdout), sucesso — cliente sem chave antiga ativa:**
 
