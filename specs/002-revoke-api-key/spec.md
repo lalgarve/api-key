@@ -1,6 +1,6 @@
 # Spec: revoke-api-key
 
-**Status:** aprovada
+**Status:** aprovada — implementada (T001-T005 concluídas)
 **Issue:** #11
 
 ## Resumo
