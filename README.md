@@ -32,12 +32,19 @@ para o contexto acadêmico completo.
 ```
 export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
 java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90]
+java -jar deployo-api-key.jar revoke --id 3 [--in-days 14]
 ```
 
 A chave em texto puro é impressa **uma única vez**, na hora da geração — guarde-a
-imediatamente, não há como recuperá-la depois. Ver
+imediatamente, não há como recuperá-la depois. `revoke` identifica a chave pelo seu `id`
+numérico (nunca pela chave em texto puro nem pelo hash) — descubra o `id` com o comando `list`
+(`specs/004-list-api-keys`, quando implementado). Sem `--in-days`, a revogação é imediata; com
+`--in-days`, fica agendada para aquele número de dias a partir de agora, sem nunca passar do
+prazo de validade (`--validity-days`) já definido para a chave. Ver
 [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
-para o contrato completo (argumentos, saída, exit codes).
+e
+[`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
+para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
 ## Operação: backup do pepper do HMAC
 
