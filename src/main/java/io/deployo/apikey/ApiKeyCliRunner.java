@@ -1,6 +1,7 @@
 package io.deployo.apikey;
 
 import io.deployo.apikey.issuance.GenerateCommand;
+import io.deployo.apikey.management.ListCommand;
 import io.deployo.apikey.management.RevokeCommand;
 import java.util.Map;
 import org.springframework.boot.CommandLineRunner;
@@ -20,10 +21,12 @@ public class ApiKeyCliRunner implements CommandLineRunner {
     private final Map<String, CliCommand> commands;
     private final ProcessExiter exiter;
 
-    public ApiKeyCliRunner(GenerateCommand generateCommand, RevokeCommand revokeCommand, ProcessExiter exiter) {
+    public ApiKeyCliRunner(GenerateCommand generateCommand, RevokeCommand revokeCommand, ListCommand listCommand,
+            ProcessExiter exiter) {
         this.commands = Map.of(
                 "generate", generateCommand,
-                "revoke", revokeCommand);
+                "revoke", revokeCommand,
+                "list", listCommand);
         this.exiter = exiter;
     }
 
