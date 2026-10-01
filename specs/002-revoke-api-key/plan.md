@@ -21,14 +21,14 @@ comando real.
 | Revogar uma chave já expirada | Falha com erro — nada é alterado | resolvida | Uma chave expirada não tem mais nada a revogar; tratar como sucesso silencioso (sem mudar nada) esconderia do operador que o comando não fez efeito nenhum. |
 | `revoked_at` calculado pode ultrapassar `expires_at`? | Não — se o valor calculado (imediato ou via `--in-days`) for posterior a `expires_at`, a operação falha antes de persistir | resolvida | Agendar uma revogação para depois do momento em que a chave já deixaria de funcionar por conta própria não tem efeito prático — é sinal de um `--in-days` escolhido sem olhar para a validade da chave; melhor recusar do que aceitar silenciosamente um valor sem efeito. |
 | Ordem de verificação: já revogada vs. já expirada vs. `--in-days` além da expiração | Nessa ordem: não encontrada → já revogada → já expirada → (se passou pelas anteriores) calcula o novo `revoked_at` e checa se ultrapassa `expires_at` | resolvida | Já revogada é o estado mais específico (uma ação explícita já aconteceu) e é checado primeiro; já expirada é um estado mais "passivo" checado em seguida; só então faz sentido calcular e validar um novo valor. |
-| Onde vive a lógica de revogação em relação a `issuance` | `RevokeCommand` num novo pacote `io.deployo.apikey.management`, reutilizando `ApiKey`/`ApiKeyRepository` de `io.deployo.apikey.issuance` sem movê-los | resolvida | `ApiKey`/`ApiKeyRepository` já existem em `issuance`; só há hoje uma segunda frente consumindo-os (`management`), não justifica extrair para um pacote neutro ainda — revisitar quando a frente de "Leitura" (validação, `001`/plan.md) também precisar deles. |
+| Onde vive a lógica de revogação em relação a `issuance` | `RevokeCommand` num novo pacote `dev.leilaalgarve.apikey.management`, reutilizando `ApiKey`/`ApiKeyRepository` de `dev.leilaalgarve.apikey.issuance` sem movê-los | resolvida | `ApiKey`/`ApiKeyRepository` já existem em `issuance`; só há hoje uma segunda frente consumindo-os (`management`), não justifica extrair para um pacote neutro ainda — revisitar quando a frente de "Leitura" (validação, `001`/plan.md) também precisar deles. |
 
 Nenhuma decisão em aberto restante — ver `spec.md`.
 
 ## Estrutura de módulos/pacotes
 
-- **Emissão** (`io.deployo.apikey.issuance`, `001`): inalterada.
-- **Gestão** (`io.deployo.apikey.management`, nova): `RevokeCommand` — e, quando implementado,
+- **Emissão** (`dev.leilaalgarve.apikey.issuance`, `001`): inalterada.
+- **Gestão** (`dev.leilaalgarve.apikey.management`, nova): `RevokeCommand` — e, quando implementado,
   `ListCommand` (`004`) — operam sobre chaves já emitidas (revogar, listar), sem gerar chaves
   novas.
 - **Leitura** (futura, fora de escopo): segue não implementada.

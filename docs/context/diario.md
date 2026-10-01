@@ -292,3 +292,25 @@ implementados; Issues #11, #12, #13 com checklists fechados.
 - `c1c6e80` docs: mark 004-list-api-keys implemented (T001-T004)
 
 **Issues:** #11, #12, #13 — todas as tarefas concluídas.
+
+## 2026-10-01
+
+**Resumo:** PR #10 mesclada; CI confirmado verde em `main`. Nova spec,
+`005-refactor-pacote-base`: renomear o pacote Java raiz de `io.deployo` para
+`dev.leilaalgarve` — mesma mudança já aplicada no `jogo-acoes`
+(`specs/05-001-refactor-pacote-base`), pelo mesmo motivo (o domínio `deployo.io` não é mais de
+posse da autora). Mudança puramente mecânica: `io/deployo/apikey` → `dev/leilaalgarve/apikey`
+em `src/main/java` e `src/test/java` (preservando `issuance`/`management`), `groupId` do
+`pom.xml` acompanhou (`artifactId` não muda — não é pacote Java), e as menções ao pacote antigo
+em `specs/002`/`003`/`004`'s `plan.md` foram atualizadas. `docs/context/diario.md` não foi
+reescrito (registro histórico) — só esta entrada nova documenta a mudança. Sem `plan.md` para
+esta spec, mesmo racional do `jogo-acoes`: não há decisão técnica em aberto para uma renomeação
+mecânica. Validado com `mvn clean verify` (84/84 testes, mesma cobertura ~95-98%) — o `clean`
+foi necessário porque `target/` ainda tinha `.class` compilados do pacote antigo de builds
+anteriores.
+
+**Commits:**
+- `11899bd` feat: add spec for refactoring the base package to dev.leilaalgarve
+- `bbaa055` refactor: rename base Java package io.deployo to dev.leilaalgarve (T001-T007)
+
+**Issues:** #16 — todas as tarefas concluídas.

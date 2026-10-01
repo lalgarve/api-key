@@ -20,7 +20,7 @@ por `002-revoke-api-key` (T001). Depende também da tabela de despacho de comand
 
 ## Estrutura de módulos/pacotes
 
-`ListCommand` no pacote `io.deployo.apikey.management` (mesma frente de "Gestão" introduzida
+`ListCommand` no pacote `dev.leilaalgarve.apikey.management` (mesma frente de "Gestão" introduzida
 em `002-revoke-api-key` para `RevokeCommand`), registrado na tabela de despacho de
 `ApiKeyCliRunner`.
 

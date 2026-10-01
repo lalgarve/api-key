@@ -6,7 +6,7 @@ Traduz `spec.md` em decisões técnicas. Valida contra `memory/constitution.md`.
 
 Depende diretamente de `002-revoke-api-key`: usa a coluna `revoked_at` definida lá (T001) e a
 tabela de despacho de comandos da CLI (T002) — nenhuma migration nova nem refatoração de
-despacho nesta feature. Modifica o comando `generate` existente (`io.deployo.apikey.issuance`,
+despacho nesta feature. Modifica o comando `generate` existente (`dev.leilaalgarve.apikey.issuance`,
 de `001-generate-api-key`), acrescentando um passo antes da persistência da chave nova.
 
 ## Decisões de arquitetura
@@ -21,7 +21,7 @@ de `001-generate-api-key`), acrescentando um passo antes da persistência da cha
 
 ## Estrutura de módulos/pacotes
 
-Novo colaborador na frente de **Emissão** (`io.deployo.apikey.issuance`, mesma frente de
+Novo colaborador na frente de **Emissão** (`dev.leilaalgarve.apikey.issuance`, mesma frente de
 `GenerateCommand`) — por exemplo `OldKeyRotationPolicy` — injetado em `GenerateCommand` e
 responsável por: buscar as chaves ativas do cliente (via `ApiKeyRepository`, decisão acima),
 calcular o novo `revoked_at` respeitando FR4, e persistir a atualização. Fica em `issuance`, e
