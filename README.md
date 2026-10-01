@@ -33,23 +33,31 @@ para o contexto acadêmico completo.
 export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
 java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
 java -jar deployo-api-key.jar revoke --id 3 [--in-days 14]
+java -jar deployo-api-key.jar list [--status active|expired|revoked|all] [--client jogo-acoes] [--revoking-within-days 30]
 ```
 
 A chave em texto puro é impressa **uma única vez**, na hora da geração — guarde-a
 imediatamente, não há como recuperá-la depois. `revoke` identifica a chave pelo seu `id`
-numérico (nunca pela chave em texto puro nem pelo hash) — descubra o `id` com o comando `list`
-(`specs/004-list-api-keys`, quando implementado). Sem `--in-days`, a revogação é imediata; com
-`--in-days`, fica agendada para aquele número de dias a partir de agora, sem nunca passar do
-prazo de validade (`--validity-days`) já definido para a chave.
+numérico (nunca pela chave em texto puro nem pelo hash) — descubra o `id` com `list`. Sem
+`--in-days`, a revogação é imediata; com `--in-days`, fica agendada para aquele número de dias
+a partir de agora, sem nunca passar do prazo de validade (`--validity-days`) já definido para a
+chave.
 
 Rotação de chave: `generate --client jogo-acoes --revoke-old-in-days 7` gera a chave nova **e**
 agenda a revogação de qualquer chave já ativa do mesmo cliente para 7 dias depois — `0` revoga
 na hora (corte imediato). Sem `--revoke-old-in-days`, `generate` nunca toca em nenhuma chave
 existente, mesmo que o cliente já tenha uma ativa.
 
+`list` mostra, por padrão, só chaves ativas; `--status all/expired/revoked` muda o filtro, e
+`--revoking-within-days N` (só combinável com `--status active`, padrão ou explícito) mostra só
+chaves com revogação agendada para os próximos N dias. O status de cada linha é derivado na
+hora da consulta (nunca armazenado) — `revoked` tem prioridade sobre `expired`, que tem
+prioridade sobre `active`.
+
 Ver [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
-(estendido por [`specs/003-auto-revoke-on-rotation/contracts/cli-commands.md`](specs/003-auto-revoke-on-rotation/contracts/cli-commands.md))
-e [`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
+(estendido por [`specs/003-auto-revoke-on-rotation/contracts/cli-commands.md`](specs/003-auto-revoke-on-rotation/contracts/cli-commands.md)),
+[`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
+e [`specs/004-list-api-keys/contracts/cli-commands.md`](specs/004-list-api-keys/contracts/cli-commands.md)
 para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
 ## Operação: backup do pepper do HMAC
