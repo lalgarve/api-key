@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -90,5 +91,31 @@ class ApiKeysMigrationTest {
                 "INSERT INTO api_keys (client_name, key_hash, created_at) VALUES (?, ?, ?)",
                 "billing", "duplicate-hash", now))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void revokedAtIsNullableAndDefaultsToNull() {
+        jdbcTemplate.update(
+                "INSERT INTO api_keys (client_name, key_hash, created_at) VALUES (?, ?, ?)",
+                "jogo-acoes", "hash-no-revocation", Timestamp.from(Instant.now()));
+
+        Timestamp revokedAt = jdbcTemplate.queryForObject(
+                "SELECT revoked_at FROM api_keys WHERE key_hash = ?", Timestamp.class, "hash-no-revocation");
+        assertThat(revokedAt).isNull();
+    }
+
+    @Test
+    void revokedAtCanBeSetAfterInsert() {
+        Timestamp createdAt = Timestamp.from(Instant.now());
+        jdbcTemplate.update(
+                "INSERT INTO api_keys (client_name, key_hash, created_at) VALUES (?, ?, ?)",
+                "jogo-acoes", "hash-to-revoke", createdAt);
+
+        Timestamp revokedAt = Timestamp.from(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        jdbcTemplate.update("UPDATE api_keys SET revoked_at = ? WHERE key_hash = ?", revokedAt, "hash-to-revoke");
+
+        Timestamp reloaded = jdbcTemplate.queryForObject(
+                "SELECT revoked_at FROM api_keys WHERE key_hash = ?", Timestamp.class, "hash-to-revoke");
+        assertThat(reloaded).isEqualTo(revokedAt);
     }
 }
