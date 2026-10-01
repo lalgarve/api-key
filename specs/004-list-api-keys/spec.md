@@ -1,6 +1,6 @@
 # Spec: list-api-keys
 
-**Status:** aprovada
+**Status:** aprovada — implementada (T001-T004 concluídas)
 **Issue:** #13
 
 ## Resumo
