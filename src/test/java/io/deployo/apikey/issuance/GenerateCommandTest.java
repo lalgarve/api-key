@@ -127,19 +127,6 @@ class GenerateCommandTest {
         assertThat(repository.count()).isEqualTo(before);
     }
 
-    @Test
-    void withoutTheGenerateCommandWordItDoesNothing() {
-        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-        long before = repository.count();
-
-        int exitCode = command.execute(new String[] {"--spring.datasource.url=jdbc:h2:mem:unused"},
-                printStream(outBytes), printStream(new ByteArrayOutputStream()));
-
-        assertThat(exitCode).isEqualTo(0);
-        assertThat(outBytes.toByteArray()).isEmpty();
-        assertThat(repository.count()).isEqualTo(before);
-    }
-
     private static PrintStream printStream(ByteArrayOutputStream bytes) {
         return new PrintStream(bytes, true, StandardCharsets.UTF_8);
     }

@@ -1,5 +1,7 @@
 package io.deployo.apikey.issuance;
 
+import io.deployo.apikey.CliArgs;
+import io.deployo.apikey.CliCommand;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -11,10 +13,11 @@ import org.springframework.stereotype.Component;
  * compute validity -> persist -> print the plaintext key exactly once. Returns the exit code
  * instead of calling System.exit itself, so every branch (including the argument parsing) can
  * be unit-tested without terminating the JVM -- see ApiKeyCliRunner for the thin adapter that
- * actually exits the process.
+ * actually exits the process. Only called by ApiKeyCliRunner when args[0] is "generate" -- this
+ * class no longer re-checks that itself (see CliCommand's dispatch table).
  */
 @Component
-public class GenerateCommand {
+public class GenerateCommand implements CliCommand {
 
     private final ApiKeyGenerator generator;
     private final ApiKeyHasher hasher;
@@ -26,12 +29,9 @@ public class GenerateCommand {
         this.repository = repository;
     }
 
+    @Override
     public int execute(String[] args, PrintStream out, PrintStream err) {
-        if (args.length == 0 || !"generate".equals(args[0])) {
-            return 0;
-        }
-
-        String client = extractOption(args, "--client");
+        String client = CliArgs.extractOption(args, "--client");
         if (client == null || client.isBlank()) {
             err.println(client == null
                     ? "Error: --client is required."
@@ -39,10 +39,10 @@ public class GenerateCommand {
             return 1;
         }
 
-        String validityDaysRaw = extractOption(args, "--validity-days");
+        String validityDaysRaw = CliArgs.extractOption(args, "--validity-days");
         Integer validityDays = null;
         if (validityDaysRaw != null) {
-            validityDays = parsePositiveInt(validityDaysRaw);
+            validityDays = CliArgs.parsePositiveInt(validityDaysRaw);
             if (validityDays == null) {
                 err.println("Error: --validity-days must be a positive integer.");
                 return 1;
@@ -77,23 +77,5 @@ public class GenerateCommand {
         out.println();
 
         return 0;
-    }
-
-    private static Integer parsePositiveInt(String raw) {
-        try {
-            int value = Integer.parseInt(raw.trim());
-            return value > 0 ? value : null;
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private static String extractOption(String[] args, String flag) {
-        for (int i = 1; i < args.length - 1; i++) {
-            if (flag.equals(args[i])) {
-                return args[i + 1];
-            }
-        }
-        return null;
     }
 }

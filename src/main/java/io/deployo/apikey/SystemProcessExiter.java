@@ -1,4 +1,4 @@
-package io.deployo.apikey.issuance;
+package io.deployo.apikey;
 
 import org.springframework.stereotype.Component;
 
