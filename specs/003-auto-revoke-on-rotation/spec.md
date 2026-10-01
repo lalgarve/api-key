@@ -1,6 +1,6 @@
 # Spec: auto-revoke-on-rotation
 
-**Status:** aprovada
+**Status:** aprovada — implementada (T001-T006 concluídas)
 **Issue:** #12
 
 ## Resumo
