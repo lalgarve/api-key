@@ -1,4 +1,4 @@
-package io.deployo.apikey.issuance;
+package io.deployo.apikey;
 
 /**
  * Seam around {@link System#exit(int)} so the CLI's exit-code path can be unit-tested without

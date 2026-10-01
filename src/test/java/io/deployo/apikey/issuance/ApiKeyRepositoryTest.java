@@ -44,4 +44,18 @@ class ApiKeyRepositoryTest {
         ApiKey reloaded = repository.findById(saved.getId()).orElseThrow();
         assertThat(reloaded.getExpiresAt()).isNull();
     }
+
+    @Test
+    void revokedAtDefaultsToNullAndCanBeUpdated() {
+        ApiKey saved = repository.save(new ApiKey(
+                "jogo-acoes", "hash-3", Instant.now().truncatedTo(ChronoUnit.MICROS), null));
+        assertThat(saved.getRevokedAt()).isNull();
+
+        Instant revokedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        saved.revokeAt(revokedAt);
+        repository.save(saved);
+
+        ApiKey reloaded = repository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getRevokedAt()).isEqualTo(revokedAt);
+    }
 }

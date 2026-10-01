@@ -29,6 +29,9 @@ public class ApiKey {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
+    @Column(name = "revoked_at")
+    private Instant revokedAt;
+
     protected ApiKey() {
         // JPA
     }
@@ -58,5 +61,23 @@ public class ApiKey {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void revokeAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+
+    /** True once {@code now} has reached this key's revocation moment (past or exactly now). */
+    public boolean isRevoked(Instant now) {
+        return revokedAt != null && !revokedAt.isAfter(now);
+    }
+
+    /** True once {@code now} has reached this key's own expiration, independent of revocation. */
+    public boolean isExpired(Instant now) {
+        return expiresAt != null && !expiresAt.isAfter(now);
     }
 }
