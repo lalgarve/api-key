@@ -314,3 +314,42 @@ anteriores.
 - `bbaa055` refactor: rename base Java package io.deployo to dev.leilaalgarve (T001-T007)
 
 **Issues:** #16 — todas as tarefas concluídas.
+
+Apontado (pela autora) que os cenários Gherkin de `specs/001` a `004` existiam só como prosa
+dentro de cada `spec.md` — nenhum `.feature`, nenhum Cucumber, zero testes rastreáveis a eles;
+os testes JUnit já existentes cobrem comportamento parecido, mas não "são os cenários rodando".
+Nova spec, `006-executable-gherkin-scenarios`: Cucumber 8.0.3 (`cucumber-java`,
+`cucumber-spring`, `cucumber-junit-platform-engine`) + `junit-platform-suite`, descoberto pelo
+mesmo `mvn verify` que já roda a suíte JUnit. Cada `Scenario:` já escrito ganhou um cenário
+Cucumber correspondente em `src/test/resources/features/` (um arquivo por spec), e a seção
+"Cenários" de cada `spec.md` (001-004) passou a apontar para o `.feature` em vez de duplicar a
+prosa inline — evita as duas cópias divergirem. Testes JUnit mantidos como estão (cobrem
+determinismo de HMAC, round-trip de persistência, a tabela de despacho da CLI — coisas que o
+Gherkin não expressa); Cucumber acrescenta a camada de aceite, não substitui a unitária.
+
+Duas decisões técnicas só ficaram claras na prática, não no planejamento: (1) a tentativa
+inicial de isolar estado entre cenários com `@ScenarioScope` (o padrão documentado do
+`cucumber-spring`) não funcionou de forma confiável — campos liam `null` ao acessar a mesma
+instância a partir de uma classe de step diferente da que escreveu; trocado por um bean
+singleton comum, resetado por um hook `@Before` a cada cenário (seguro porque o Cucumber roda
+sequencialmente aqui, sem paralelismo). (2) como `cucumber-spring` não envolve cada cenário na
+própria transação revertida ao final (do jeito que `@Transactional` faz num teste JUnit),
+isolamento entre cenários no mesmo H2 compartilhado veio de sufixar o nome de cada cliente
+citado no `.feature` com um valor aleatório por cenário, de forma transparente — mais simples
+que orquestrar reversão de transação manual. O cenário de atomicidade de `003` ("persisting
+the old-key revocation fails") reaproveita o mesmo padrão de `GenerateCommandRotationAtomicityTest`
+(JUnit): `@MockitoSpyBean` sobre o repositório real, com `Mockito.reset()` num hook `@After`
+pra não vazar entre cenários (a suíte Cucumber usa um contexto só, logo um spy só, para todos
+os 42 cenários). Os cenários de `list` são verificados contra a tabela impressa de verdade
+(`stdout`), não reconsultando o repositório e recalculando o status esperado — testar isso
+dessa segunda forma estaria testando o teste, não o comando real.
+
+Validado com `mvn clean verify` repetido 3 vezes (descartar instabilidade): 126/126 testes
+(84 JUnit + 42 Cucumber), ~96-98% de cobertura, sem nenhuma queda.
+
+**Commits (continuação):**
+- `0e5d2f2` feat: add spec for making the Gherkin scenarios executable
+- `fc7c15c` feat: make specs 001-004's Gherkin scenarios executable (T001-T008)
+- `6b4507b` docs: point specs 001-004 at their executable .feature files (T009)
+
+**Issues:** #18 — todas as tarefas concluídas.

@@ -1,6 +1,6 @@
 # Spec: Tornar os cenários Gherkin executáveis
 
-**Status:** aprovada
+**Status:** aprovada — implementada (T001-T011 concluídas)
 **Issue:** #18
 
 ## Resumo
