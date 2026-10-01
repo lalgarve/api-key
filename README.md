@@ -31,7 +31,7 @@ para o contexto acadêmico completo.
 
 ```
 export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
-java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90]
+java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
 java -jar deployo-api-key.jar revoke --id 3 [--in-days 14]
 ```
 
@@ -40,10 +40,16 @@ imediatamente, não há como recuperá-la depois. `revoke` identifica a chave pe
 numérico (nunca pela chave em texto puro nem pelo hash) — descubra o `id` com o comando `list`
 (`specs/004-list-api-keys`, quando implementado). Sem `--in-days`, a revogação é imediata; com
 `--in-days`, fica agendada para aquele número de dias a partir de agora, sem nunca passar do
-prazo de validade (`--validity-days`) já definido para a chave. Ver
-[`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
-e
-[`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
+prazo de validade (`--validity-days`) já definido para a chave.
+
+Rotação de chave: `generate --client jogo-acoes --revoke-old-in-days 7` gera a chave nova **e**
+agenda a revogação de qualquer chave já ativa do mesmo cliente para 7 dias depois — `0` revoga
+na hora (corte imediato). Sem `--revoke-old-in-days`, `generate` nunca toca em nenhuma chave
+existente, mesmo que o cliente já tenha uma ativa.
+
+Ver [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
+(estendido por [`specs/003-auto-revoke-on-rotation/contracts/cli-commands.md`](specs/003-auto-revoke-on-rotation/contracts/cli-commands.md))
+e [`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
 para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
 ## Operação: backup do pepper do HMAC
