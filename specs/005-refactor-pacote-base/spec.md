@@ -1,6 +1,6 @@
 # Spec: Refatorar pacote base `io.deployo` → `dev.leilaalgarve`
 
-**Status:** aprovada
+**Status:** aprovada — implementada (T001-T008 concluídas)
 **Issue:** #16
 
 ## Resumo
