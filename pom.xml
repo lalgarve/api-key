@@ -11,7 +11,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>io.deployo.apikey</groupId>
+  <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>deployo-api-key</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>deployo-api-key</name>
