@@ -18,63 +18,23 @@ de dados diretamente, fora do fluxo normal de operação desta ferramenta.
 
 ## Cenários (comportamento esperado)
 
-```gherkin
-Scenario: list with no filters shows only active keys
-  Given some active keys, some expired keys and some revoked keys exist
-  When the operator runs "list"
-  Then only the active keys are shown
+Executáveis em [`features/list-api-keys.feature`](../../src/test/resources/features/list-api-keys.feature)
+(roda com `mvn verify`, junto com a suíte JUnit — ver `specs/006-executable-gherkin-scenarios`;
+verificados contra a tabela impressa de verdade, não recalculando o status por fora). As
+frases dos passos lá são normalizadas para um vocabulário reutilizável entre as features; o
+nome e o comportamento esperado de cada cenário não mudam:
 
-Scenario: list all keys
-  Given some active keys, some expired keys and some revoked keys exist
-  When the operator runs "list --status all"
-  Then active, expired and revoked keys are all shown
-
-Scenario: list only revoked keys
-  Given some active keys and some revoked keys exist
-  When the operator runs "list --status revoked"
-  Then only the revoked keys are shown
-
-Scenario: list only expired keys
-  Given some active keys and some expired-but-never-revoked keys exist
-  When the operator runs "list --status expired"
-  Then only the expired keys are shown
-
-Scenario: a key that is both expired and revoked shows as revoked
-  Given a key whose expires_at is in the past and whose revoked_at is also in the past
-  When the operator runs "list --status all"
-  Then that key's STATUS is "revoked", not "expired"
-
-Scenario: list filtered by client
-  Given keys exist for clients "jogo-acoes" and "billing"
-  When the operator runs "list --client jogo-acoes"
-  Then only "jogo-acoes" keys are shown, still subject to the default active-only filter
-
-Scenario: list keys scheduled to be revoked soon
-  Given an active key scheduled to be revoked in 10 days, and another in 90 days
-  When the operator runs "list --revoking-within-days 30"
-  Then only the key scheduled within 30 days is shown
-
-Scenario: --revoking-within-days combined with --status revoked is invalid
-  Given the operator runs "list --status revoked --revoking-within-days 30"
-  When the command is executed
-  Then it fails with a usage-error exit code
-
-Scenario: --revoking-within-days combined with --status expired is invalid
-  Given the operator runs "list --status expired --revoking-within-days 30"
-  When the command is executed
-  Then it fails with a usage-error exit code
-
-Scenario: no keys match the filters
-  Given no key matches the given filters
-  When the command is executed
-  Then it succeeds
-  And it prints a message saying no keys were found
-
-Scenario: --revoking-within-days is invalid
-  Given the operator runs "list --revoking-within-days 0" (or a negative or non-integer value)
-  When the command is executed
-  Then it fails with a usage-error exit code
-```
+- list with no filters shows only active keys
+- list all keys
+- list only revoked keys
+- list only expired keys
+- a key that is both expired and revoked shows as revoked
+- list filtered by client
+- list keys scheduled to be revoked soon
+- --revoking-within-days combined with --status revoked is invalid
+- --revoking-within-days combined with --status expired is invalid
+- no keys match the filters
+- --revoking-within-days is invalid (zero, negativo, ou não-numérico)
 
 ## Requisitos funcionais
 

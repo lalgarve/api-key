@@ -24,49 +24,18 @@ do escopo desta feature — ver "Fora de escopo" abaixo).
 
 ## Cenários (comportamento esperado)
 
-```gherkin
-Scenario: generate a new key for a named client
-  Given no operator input beyond a valid client name
-  When the operator runs "generate --client jogo-acoes"
-  Then a new row is persisted with the key's hash, the client name "jogo-acoes", and the creation timestamp
-  And the plaintext key is printed to stdout exactly once
-  And the plaintext key is never written to the database or to any log
+Executáveis em [`features/generate-api-key.feature`](../../src/test/resources/features/generate-api-key.feature)
+(roda com `mvn verify`, junto com a suíte JUnit — ver `specs/006-executable-gherkin-scenarios`).
+As frases dos passos lá são normalizadas para um vocabulário reutilizável entre as features; o
+nome e o comportamento esperado de cada cenário não mudam:
 
-Scenario: client name is required
-  Given the operator runs "generate" without "--client"
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And no row is persisted
-
-Scenario: client name is blank
-  Given the operator runs "generate --client " with an empty/whitespace-only value
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And no row is persisted
-
-Scenario: HMAC pepper is not configured
-  Given the environment variable holding the HMAC pepper is not set
-  When the operator runs "generate --client jogo-acoes"
-  Then the command fails with a configuration-error exit code
-  And no row is persisted
-  And no plaintext key is printed
-
-Scenario: generate a key with a validity period
-  Given the operator runs "generate --client jogo-acoes --validity-days 90"
-  When the command is executed
-  Then a new row is persisted with expires_at set to 90 days after the creation timestamp
-
-Scenario: generate a key without a validity period
-  Given the operator runs "generate --client jogo-acoes" without "--validity-days"
-  When the command is executed
-  Then a new row is persisted with expires_at set to null (no expiration)
-
-Scenario: validity in days must be a positive integer
-  Given the operator runs "generate --client jogo-acoes --validity-days 0" (or a negative or non-integer value)
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And no row is persisted
-```
+- generate a new key for a named client
+- client name is required
+- client name is blank
+- HMAC pepper is not configured
+- generate a key with a validity period
+- generate a key without a validity period
+- validity in days must be a positive integer (zero, negativo, ou não-numérico)
 
 ## Requisitos funcionais
 

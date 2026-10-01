@@ -25,50 +25,20 @@ tocada só porque o cliente já tinha uma.
 
 ## Cenários (comportamento esperado)
 
-```gherkin
-Scenario: generate for a client with no pre-existing active key
-  Given client "jogo-acoes" has no key at all, or only keys already revoked
-  When the operator runs "generate --client jogo-acoes"
-  Then the new key is created as usual
-  And no other row is changed
+Executáveis em [`features/auto-revoke-on-rotation.feature`](../../src/test/resources/features/auto-revoke-on-rotation.feature)
+(roda com `mvn verify`, junto com a suíte JUnit — ver `specs/006-executable-gherkin-scenarios`;
+o cenário de atomicidade usa um spy sobre o repositório real para simular a falha de
+persistência). As frases dos passos lá são normalizadas para um vocabulário reutilizável entre
+as features; o nome e o comportamento esperado de cada cenário não mudam:
 
-Scenario: generate for a client with an existing active key, without --revoke-old-in-days
-  Given client "jogo-acoes" has one active key (id 3), not revoked nor scheduled
-  When the operator runs "generate --client jogo-acoes" (no "--revoke-old-in-days")
-  Then the new key is created
-  And key id 3 is left untouched — same outcome as if it didn't exist
-
-Scenario: generate with an explicit grace period
-  Given client "jogo-acoes" has one active key (id 3)
-  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 3"
-  Then key id 3 has its revocation scheduled for 3 days from now
-
-Scenario: generate with an immediate cutover
-  Given client "jogo-acoes" has one active key (id 3)
-  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 0"
-  Then key id 3 is revoked immediately (revocation moment set to now)
-
-Scenario: generate for a client with multiple pre-existing active keys
-  Given client "jogo-acoes" has active keys with id 3 and id 5
-  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 7"
-  Then both key id 3 and key id 5 have their revocation scheduled for 7 days from now
-
-Scenario: an old key already has an earlier scheduled revocation
-  Given client "jogo-acoes" has an active key (id 3) already scheduled to be revoked in 2 days
-  When the operator runs "generate --client jogo-acoes --revoke-old-in-days 7"
-  Then key id 3's revocation stays scheduled for 2 days from now (not pushed back to 7)
-
-Scenario: --revoke-old-in-days is invalid
-  Given the operator runs "generate --client jogo-acoes --revoke-old-in-days -1" (or a non-integer value)
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And no key is generated, and no existing key is changed
-
-Scenario: persisting the old-key revocation fails
-  Given client "jogo-acoes" has one active key (id 3)
-  When the operator runs "generate --client jogo-acoes" and the database rejects the update to key id 3
-  Then the new key is not persisted either — the whole operation fails as a unit
-```
+- generate for a client with no pre-existing active key
+- generate for a client with an existing active key, without --revoke-old-in-days
+- generate with an explicit grace period
+- generate with an immediate cutover
+- generate for a client with multiple pre-existing active keys
+- an old key already has an earlier scheduled revocation
+- --revoke-old-in-days is invalid (negativo ou não-numérico)
+- persisting the old-key revocation fails
 
 ## Requisitos funcionais
 

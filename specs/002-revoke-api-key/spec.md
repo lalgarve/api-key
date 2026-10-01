@@ -21,60 +21,20 @@ mesmo comando: omitido, revoga na hora; informado, agenda a revogação para o f
 
 ## Cenários (comportamento esperado)
 
-```gherkin
-Scenario: revoke a key immediately
-  Given a key with id 3, not yet revoked
-  When the operator runs "revoke --id 3"
-  Then the key's revocation moment is set to now
-  And the key can no longer authenticate from this moment on
+Executáveis em [`features/revoke-api-key.feature`](../../src/test/resources/features/revoke-api-key.feature)
+(roda com `mvn verify`, junto com a suíte JUnit — ver `specs/006-executable-gherkin-scenarios`).
+As frases dos passos lá são normalizadas para um vocabulário reutilizável entre as features; o
+nome e o comportamento esperado de cada cenário não mudam:
 
-Scenario: revoke a key with a grace period
-  Given a key with id 3, not yet revoked
-  When the operator runs "revoke --id 3 --in-days 14"
-  Then the key's revocation moment is set to 14 days from now
-  And the key continues to authenticate until that moment
-
-Scenario: --id is required
-  Given the operator runs "revoke" without "--id"
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And nothing is changed
-
-Scenario: --id does not match any key
-  Given no key exists with id 999
-  When the operator runs "revoke --id 999"
-  Then it fails with a not-found exit code
-  And nothing is changed
-
-Scenario: --in-days is invalid
-  Given the operator runs "revoke --id 3 --in-days 0" (or a negative or non-integer value)
-  When the command is executed
-  Then it fails with a usage-error exit code
-  And nothing is changed
-
-Scenario: key is already revoked
-  Given a key with id 3 whose revocation moment is already in the past
-  When the operator runs "revoke --id 3" (with or without "--in-days")
-  Then it fails with an already-revoked exit code
-  And nothing is changed
-
-Scenario: key already has a future revocation scheduled
-  Given a key with id 3 scheduled to be revoked in 30 days
-  When the operator runs "revoke --id 3 --in-days 5"
-  Then the key's revocation moment is updated to 5 days from now (the schedule is replaced)
-
-Scenario: key has already expired
-  Given a key with id 3 whose expires_at is already in the past
-  When the operator runs "revoke --id 3" (with or without "--in-days")
-  Then it fails with an already-expired exit code
-  And nothing is changed
-
-Scenario: --in-days would schedule the revocation past the key's own expiration
-  Given a key with id 3 whose expires_at is 10 days from now, not yet revoked
-  When the operator runs "revoke --id 3 --in-days 20"
-  Then it fails with a usage-error exit code
-  And nothing is changed
-```
+- revoke a key immediately
+- revoke a key with a grace period
+- --id is required
+- --id does not match any key
+- --in-days is invalid (zero, negativo, ou não-numérico)
+- key is already revoked
+- key already has a future revocation scheduled
+- key has already expired
+- --in-days would schedule the revocation past the key's own expiration
 
 ## Requisitos funcionais
 
