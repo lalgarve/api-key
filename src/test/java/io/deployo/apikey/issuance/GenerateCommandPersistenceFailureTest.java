@@ -24,7 +24,8 @@ class GenerateCommandPersistenceFailureTest {
         ApiKeyRepository repository = mock(ApiKeyRepository.class);
         when(repository.save(any())).thenThrow(new DataAccessResourceFailureException("connection refused"));
 
-        GenerateCommand command = new GenerateCommand(new ApiKeyGenerator(), new ApiKeyHasher("test-pepper"), repository);
+        GenerateCommand command = new GenerateCommand(
+                new ApiKeyGenerator(), new ApiKeyHasher("test-pepper"), repository, new OldKeyRotationPolicy(repository));
 
         ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
         ByteArrayOutputStream errBytes = new ByteArrayOutputStream();

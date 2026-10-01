@@ -6,6 +6,8 @@ import io.deployo.apikey.DeployoApiKeyApplication;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +127,110 @@ class GenerateCommandTest {
         assertThat(out(errBytes)).isEqualTo("Error: --validity-days must be a positive integer.\n");
         assertThat(outBytes.toByteArray()).isEmpty();
         assertThat(repository.count()).isEqualTo(before);
+    }
+
+    @Test
+    void withoutRevokeOldInDaysExistingActiveKeyIsUntouched() {
+        ApiKey existing = repository.save(new ApiKey("jogo-acoes-rotation-1", "hash-untouched", Instant.now(), null));
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-1"},
+                printStream(new ByteArrayOutputStream()), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(repository.findById(existing.getId()).orElseThrow().getRevokedAt()).isNull();
+    }
+
+    @Test
+    void revokeOldInDaysWithNoExistingKeyHasNoEffect() {
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-2", "--revoke-old-in-days", "7"},
+                printStream(outBytes), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(out(outBytes)).doesNotContain("existing key");
+    }
+
+    @Test
+    void revokeOldInDaysSchedulesTheExistingActiveKey() {
+        ApiKey existing = repository.save(new ApiKey("jogo-acoes-rotation-3", "hash-scheduled", Instant.now(), null));
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-3", "--revoke-old-in-days", "7"},
+                printStream(outBytes), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(out(outBytes)).contains("1 existing key for client 'jogo-acoes-rotation-3' scheduled for revocation in 7 days");
+
+        ApiKey reloaded = repository.findById(existing.getId()).orElseThrow();
+        assertThat(reloaded.isRevoked(Instant.now())).isFalse();
+        assertThat(reloaded.isRevoked(Instant.now().plus(8, ChronoUnit.DAYS))).isTrue();
+    }
+
+    @Test
+    void revokeOldInDaysZeroRevokesTheExistingActiveKeyImmediately() {
+        ApiKey existing = repository.save(new ApiKey("jogo-acoes-rotation-4", "hash-immediate-rotation", Instant.now(), null));
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-4", "--revoke-old-in-days", "0"},
+                printStream(outBytes), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(out(outBytes)).contains("1 existing key for client 'jogo-acoes-rotation-4' has been revoked.");
+        assertThat(repository.findById(existing.getId()).orElseThrow().isRevoked(Instant.now())).isTrue();
+    }
+
+    @Test
+    void revokeOldInDaysSchedulesMultipleExistingActiveKeys() {
+        repository.save(new ApiKey("jogo-acoes-rotation-5", "hash-multi-a", Instant.now(), null));
+        repository.save(new ApiKey("jogo-acoes-rotation-5", "hash-multi-b", Instant.now(), null));
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-5", "--revoke-old-in-days", "7"},
+                printStream(outBytes), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(out(outBytes)).contains("2 existing keys for client 'jogo-acoes-rotation-5' scheduled for revocation in 7 days");
+    }
+
+    @Test
+    void revokeOldInDaysDoesNotPushBackAnAlreadySoonerSchedule() {
+        ApiKey existing = repository.save(new ApiKey("jogo-acoes-rotation-6", "hash-sooner-schedule", Instant.now(), null));
+        existing.revokeAt(Instant.now().plus(2, ChronoUnit.DAYS));
+        repository.save(existing);
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-6", "--revoke-old-in-days", "7"},
+                printStream(outBytes), printStream(new ByteArrayOutputStream()));
+
+        assertThat(exitCode).isEqualTo(0);
+        assertThat(out(outBytes)).doesNotContain("existing key");
+        ApiKey reloaded = repository.findById(existing.getId()).orElseThrow();
+        assertThat(reloaded.isRevoked(Instant.now().plus(3, ChronoUnit.DAYS))).isTrue();
+    }
+
+    @Test
+    void negativeRevokeOldInDaysFailsWithoutPersistingOrChangingAnything() {
+        ApiKey existing = repository.save(new ApiKey("jogo-acoes-rotation-7", "hash-invalid-rotation", Instant.now(), null));
+        ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errBytes = new ByteArrayOutputStream();
+        long before = repository.count();
+
+        int exitCode = command.execute(
+                new String[] {"generate", "--client", "jogo-acoes-rotation-7", "--revoke-old-in-days", "-1"},
+                printStream(outBytes), printStream(errBytes));
+
+        assertThat(exitCode).isEqualTo(1);
+        assertThat(out(errBytes)).isEqualTo("Error: --revoke-old-in-days must be zero or a positive integer.\n");
+        assertThat(outBytes.toByteArray()).isEmpty();
+        assertThat(repository.count()).isEqualTo(before);
+        assertThat(repository.findById(existing.getId()).orElseThrow().getRevokedAt()).isNull();
     }
 
     private static PrintStream printStream(ByteArrayOutputStream bytes) {
