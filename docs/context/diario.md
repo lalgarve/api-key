@@ -243,3 +243,52 @@ specs (`001`-`004`).
 
 **Issues:** #11 atualizada (T000 resolvida, status aprovada — nenhuma decisão em aberto
 restante nesta feature).
+
+Implementadas as três specs de ponta a ponta — `002-revoke-api-key`, `003-auto-revoke-on-
+rotation`, `004-list-api-keys` — nessa ordem de dependência, com `mvn verify` real a cada passo
+(84/84 testes, ~96% de cobertura, sem Docker disponível neste ambiente — validado contra H2/
+perfil `sandbox`, mesma ressalva já registrada para o perfil `docker`/CI desde `001`).
+
+`002`: migration `V2` (`revoked_at`, nova); despacho de comandos generalizado (`CliCommand` +
+tabela em `ApiKeyCliRunner`, movido para `io.deployo.apikey` — "acima" de `issuance`/
+`management`, como `plan.md` previa) — `GenerateCommand` deixou de se autochecar por
+`args[0]`, responsabilidade que migrou para o despacho; extraído `CliArgs` para o parsing de
+flags compartilhado entre comandos. `RevokeCommand` (pacote novo `management`) com os 6 exit
+codes do contrato, incluindo os dois novos desta revisão (chave já expirada; `--in-days`
+ultrapassando `expires_at`). `ApiKey` ganhou `revokeAt`/`isRevoked`/`isExpired`.
+
+`003`: achado um bug real durante a implementação, não apenas na revisão de texto — a decisão
+original de `plan.md` (rodar a rotação *depois* de persistir a chave nova) fazia a própria
+chave recém-criada compartilhar `client_name` com a busca de "chaves ativas do cliente",
+revogando a si mesma na hora. Corrigido invertendo a ordem (rotacionar antes de inserir) e
+atualizado `plan.md` para registrar o motivo. Também corrigida a decisão original do método de
+busca: `findByClientNameAndRevokedAtIsNullOrRevokedAtGreaterThan` não significa o que o nome
+sugere — Spring Data interpreta `And`/`Or` da esquerda para a direita sem agrupamento,
+alcançando chaves de outros clientes; trocado por `findByClientName` + filtro em memória.
+Atomicidade (chave nova + revogação de antigas como uma unidade) provada de verdade com
+`@Transactional` + `setRollbackOnly()` explícito no catch, testado com `@MockitoSpyBean`
+(repositório real por trás de um spy, não um mock completo) para confirmar o rollback real, não
+só o código de retorno.
+
+`004`: `ListCommand` com status derivado em memória (nunca armazenado), prioridade `revoked` >
+`expired` > `active`. Durante os testes, uma asserção baseada em substring (`contains`/
+`doesNotContain` do id numérico) deu falso-negativo por coincidência com dígitos de timestamp
+(id "11" "aparecendo" dentro de "2026-10-11") — trocadas por verificação de linha completa
+(`findRowWithId`) em todas as asserções de ausência por id.
+
+README atualizado com os três comandos; `tasks.md`/`spec.md` das três specs marcados como
+implementados; Issues #11, #12, #13 com checklists fechados.
+
+**Commits (continuação):**
+- `e84d1f7` feat: add revoked_at column to api_keys (T001)
+- `ac926d0` feat: implement the revoke CLI command (T002, T003, T004)
+- `1666b0a` docs: document the revoke CLI command (T005)
+- `556d298` docs: mark 002-revoke-api-key implemented (T001-T005)
+- `7243a67` feat: implement auto-revoke-on-rotation (T001-T005)
+- `31d5510` docs: document --revoke-old-in-days in the README (T006)
+- `47e7523` docs: mark 003-auto-revoke-on-rotation implemented (T001-T006)
+- `c4c921f` feat: implement the list CLI command (T001-T003)
+- `daeac0a` docs: document the list CLI command (T004)
+- `c1c6e80` docs: mark 004-list-api-keys implemented (T001-T004)
+
+**Issues:** #11, #12, #13 — todas as tarefas concluídas.
