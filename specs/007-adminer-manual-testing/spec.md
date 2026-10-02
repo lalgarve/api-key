@@ -1,6 +1,6 @@
 # Spec: Subir o Adminer via Docker para inspeção manual do banco
 
-**Status:** rascunho
+**Status:** aprovada — implementada (T001-T005 concluídas)
 **Issue:** #21
 
 ## Resumo
