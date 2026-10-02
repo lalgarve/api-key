@@ -13,17 +13,25 @@ import dev.leilaalgarve.apikey.validation.ApiKeyValidationResult.Valid;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidator;
 import dev.leilaalgarve.apikey.validation.IssuedKeyMother;
 import dev.leilaalgarve.apikey.validation.IssuedKeyMother.Builder;
+import dev.leilaalgarve.apikey.validation.IssuedKeyMother.IssuedKey;
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Steps for validate-api-key.feature. Cucumber creates a fresh instance of this class per
  * scenario, so the fields below are per-scenario state.
+ *
+ * <p>Scenarios aren't wrapped in a rolled-back transaction, and in CI every module's tests share
+ * one PostgreSQL database -- where api-key-cli's tests expect to find only their own rows (e.g.
+ * GenerateCommandTest counts the whole table). So each scenario deletes the keys it issued.
  */
 public class ValidationSteps {
 
@@ -37,7 +45,13 @@ public class ValidationSteps {
     private ApiKeyHasher hasher;
 
     private final Map<String, String> rawKeysByLabel = new HashMap<>();
+    private final List<Long> issuedIds = new ArrayList<>();
     private ApiKeyValidationResult result;
+
+    @After
+    public void deleteIssuedKeys() {
+        repository.deleteAllById(issuedIds);
+    }
 
     @Given("client {string} has an active key labeled {string}")
     public void clientHasAnActiveKey(String client, String label) {
@@ -103,6 +117,8 @@ public class ValidationSteps {
     }
 
     private void issue(String label, Builder key) {
-        rawKeysByLabel.put(label, key.saveWith(repository, hasher).rawKey());
+        IssuedKey issued = key.saveWith(repository, hasher);
+        issuedIds.add(issued.row().getId());
+        rawKeysByLabel.put(label, issued.rawKey());
     }
 }
