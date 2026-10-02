@@ -116,7 +116,7 @@ Este projeto usa Spec-Driven Development (SDD):
 - [`templates/`](templates/) — modelos usados para começar uma feature nova.
 
 Os cenários Gherkin de cada spec são executados de verdade por `mvn verify`, não só
-documentados: `src/test/resources/features/` (Cucumber) roda junto com a suíte JUnit, cada
+documentados: `src/test/resources/features/` de cada módulo Maven (Cucumber) roda junto com a suíte JUnit, cada
 `.feature` é o contrato de aceite da spec correspondente (ver
 `specs/006-executable-gherkin-scenarios`).
 
