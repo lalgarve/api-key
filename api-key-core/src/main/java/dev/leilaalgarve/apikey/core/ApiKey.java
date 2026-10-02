@@ -1,4 +1,4 @@
-package dev.leilaalgarve.apikey.issuance;
+package dev.leilaalgarve.apikey.core;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

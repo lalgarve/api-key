@@ -1,0 +1,13 @@
+# Same as api-key-cli's application-docker.yml: lets CI (SPRING_PROFILES_ACTIVE=docker) run
+# this module's mapping/migration tests against real PostgreSQL instead of H2. Driver and
+# Flyway locations are explicit because a profile file only overrides the keys it redefines,
+# and src/test/resources/application.yml sets both for H2.
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}
+    username: ${SPRING_DATASOURCE_USERNAME:deployo_api_key_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:deployo_api_key_admin}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration

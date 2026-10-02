@@ -1,4 +1,4 @@
-package dev.leilaalgarve.apikey.issuance;
+package dev.leilaalgarve.apikey.core;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;

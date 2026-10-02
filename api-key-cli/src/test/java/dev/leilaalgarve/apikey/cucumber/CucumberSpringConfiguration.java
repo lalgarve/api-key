@@ -1,7 +1,7 @@
 package dev.leilaalgarve.apikey.cucumber;
 
 import dev.leilaalgarve.apikey.DeployoApiKeyApplication;
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import io.cucumber.spring.CucumberContextConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;

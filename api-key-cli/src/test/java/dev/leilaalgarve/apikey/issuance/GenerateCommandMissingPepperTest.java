@@ -1,5 +1,6 @@
 package dev.leilaalgarve.apikey.issuance;
 
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.leilaalgarve.apikey.DeployoApiKeyApplication;

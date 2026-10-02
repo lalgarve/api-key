@@ -1,6 +1,6 @@
 package dev.leilaalgarve.apikey.cucumber;
 
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import org.mockito.Mockito;

@@ -1,4 +1,4 @@
-package dev.leilaalgarve.apikey;
+package dev.leilaalgarve.apikey.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Each test runs in its own transaction, rolled back afterwards -- no manual cleanup needed
  * between tests even though the H2 context (and its data) is reused across the class.
  */
-@SpringBootTest(classes = DeployoApiKeyApplication.class)
+@SpringBootTest
 @Transactional
 class ApiKeysMigrationTest {
 

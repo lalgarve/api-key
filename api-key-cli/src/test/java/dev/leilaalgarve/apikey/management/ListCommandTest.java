@@ -3,8 +3,8 @@ package dev.leilaalgarve.apikey.management;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.leilaalgarve.apikey.DeployoApiKeyApplication;
-import dev.leilaalgarve.apikey.issuance.ApiKey;
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.ApiKey;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;

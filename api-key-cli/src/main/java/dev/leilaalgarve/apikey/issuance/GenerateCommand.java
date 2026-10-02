@@ -2,6 +2,10 @@ package dev.leilaalgarve.apikey.issuance;
 
 import dev.leilaalgarve.apikey.CliArgs;
 import dev.leilaalgarve.apikey.CliCommand;
+import dev.leilaalgarve.apikey.core.ApiKey;
+import dev.leilaalgarve.apikey.core.ApiKeyHasher;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.MissingHmacPepperException;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

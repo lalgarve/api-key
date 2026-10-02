@@ -1,5 +1,7 @@
 package dev.leilaalgarve.apikey.issuance;
 
+import dev.leilaalgarve.apikey.core.ApiKeyHasher;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

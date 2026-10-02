@@ -2,8 +2,8 @@ package dev.leilaalgarve.apikey.management;
 
 import dev.leilaalgarve.apikey.CliArgs;
 import dev.leilaalgarve.apikey.CliCommand;
-import dev.leilaalgarve.apikey.issuance.ApiKey;
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.ApiKey;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

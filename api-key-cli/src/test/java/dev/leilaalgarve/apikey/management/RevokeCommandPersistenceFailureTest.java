@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.leilaalgarve.apikey.issuance.ApiKey;
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.ApiKey;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;

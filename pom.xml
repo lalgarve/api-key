@@ -21,6 +21,7 @@
   <!-- Split per specs/008-validate-api-key/plan.md, "Estrutura de módulos/pacotes": the
        protected service depends on api-key-validation only, without the CLI or Flyway. -->
   <modules>
+    <module>api-key-core</module>
     <module>api-key-cli</module>
   </modules>
 

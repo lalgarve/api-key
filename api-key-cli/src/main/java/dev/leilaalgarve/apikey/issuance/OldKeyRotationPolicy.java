@@ -1,5 +1,7 @@
 package dev.leilaalgarve.apikey.issuance;
 
+import dev.leilaalgarve.apikey.core.ApiKey;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package dev.leilaalgarve.apikey.issuance;
+package dev.leilaalgarve.apikey.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

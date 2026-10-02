@@ -1,8 +1,7 @@
-package dev.leilaalgarve.apikey.issuance;
+package dev.leilaalgarve.apikey.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.leilaalgarve.apikey.DeployoApiKeyApplication;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
  * ddl-auto=validate would already fail context startup on a mismatch) and that a full
  * round-trip through Spring Data JPA works, not just direct JDBC (ApiKeysMigrationTest).
  */
-@SpringBootTest(classes = DeployoApiKeyApplication.class)
+@SpringBootTest
 @Transactional
 class ApiKeyRepositoryTest {
 

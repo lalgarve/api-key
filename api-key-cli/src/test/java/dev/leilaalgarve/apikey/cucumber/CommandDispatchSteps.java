@@ -3,9 +3,9 @@ package dev.leilaalgarve.apikey.cucumber;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.leilaalgarve.apikey.CliCommand;
+import dev.leilaalgarve.apikey.core.ApiKeyHasher;
+import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import dev.leilaalgarve.apikey.issuance.ApiKeyGenerator;
-import dev.leilaalgarve.apikey.issuance.ApiKeyHasher;
-import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
 import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.issuance.OldKeyRotationPolicy;
 import dev.leilaalgarve.apikey.management.ListCommand;
