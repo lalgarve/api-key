@@ -62,10 +62,28 @@ public class ApiKeyValidator {
 
 ## Alterações num contrato já existente
 
-`ApiKeyRepository` (`dev.leilaalgarve.apikey.issuance`) ganha:
+`ApiKeyRepository` muda de package (`dev.leilaalgarve.apikey.issuance` →
+`dev.leilaalgarve.apikey.core`, módulo `api-key-core` — ver `plan.md`, "Estrutura de
+módulos/pacotes") e ganha:
 
 ```java
 Optional<ApiKey> findByKeyHash(String keyHash);
 ```
 
-Sem remover nem alterar nenhum método já existente.
+Sem remover nem alterar nenhum método já existente. `ApiKey`, `ApiKeyHasher` e
+`MissingHmacPepperException` mudam para a mesma package, sem alteração de assinatura.
+
+## `ApiKeyFormat` (novo, `api-key-core`)
+
+```java
+package dev.leilaalgarve.apikey.core;
+
+public final class ApiKeyFormat {
+    public static final String PREFIX = "dak_";
+    public static final int ENTROPY_BYTES = 32;
+    public static boolean matches(String candidate) { ... } // ^dak_[A-Za-z0-9_-]{43}$
+}
+```
+
+Fonte única do formato da chave: `ApiKeyGenerator` (na CLI) usa `PREFIX`/`ENTROPY_BYTES` para
+gerar, `ApiKeyValidator` usa `matches` para o ramo `MALFORMED`.
