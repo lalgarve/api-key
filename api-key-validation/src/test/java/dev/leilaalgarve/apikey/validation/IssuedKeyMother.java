@@ -15,29 +15,29 @@ import java.util.Base64;
  * by default -- active, issued a day before {@code now}, expiring in 30 days -- and each test
  * overrides only the field it is about.
  */
-final class IssuedKeyMother {
+public final class IssuedKeyMother {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private IssuedKeyMother() {
     }
 
-    static Builder activeKey(Instant now) {
+    public static Builder activeKey(Instant now) {
         return new Builder(now);
     }
 
     /** A plaintext key in the exact generated shape, never persisted. */
-    static String wellFormedRawKey() {
+    public static String wellFormedRawKey() {
         byte[] bytes = new byte[ApiKeyFormat.ENTROPY_BYTES];
         RANDOM.nextBytes(bytes);
         return ApiKeyFormat.PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     /** The plaintext key a caller would present, and the row it was issued as. */
-    record IssuedKey(String rawKey, ApiKey row) {
+    public record IssuedKey(String rawKey, ApiKey row) {
     }
 
-    static final class Builder {
+    public static final class Builder {
 
         private String clientName = "jogo-acoes";
         private Instant createdAt;
@@ -49,26 +49,26 @@ final class IssuedKeyMother {
             this.expiresAt = now.plus(30, ChronoUnit.DAYS);
         }
 
-        Builder forClient(String clientName) {
+        public Builder forClient(String clientName) {
             this.clientName = clientName;
             return this;
         }
 
-        Builder expiringAt(Instant expiresAt) {
+        public Builder expiringAt(Instant expiresAt) {
             this.expiresAt = expiresAt;
             return this;
         }
 
-        Builder neverExpiring() {
+        public Builder neverExpiring() {
             return expiringAt(null);
         }
 
-        Builder revokedAt(Instant revokedAt) {
+        public Builder revokedAt(Instant revokedAt) {
             this.revokedAt = revokedAt;
             return this;
         }
 
-        IssuedKey saveWith(ApiKeyRepository repository, ApiKeyHasher hasher) {
+        public IssuedKey saveWith(ApiKeyRepository repository, ApiKeyHasher hasher) {
             String rawKey = wellFormedRawKey();
             ApiKey row = new ApiKey(clientName, hasher.hash(rawKey), createdAt, expiresAt);
             if (revokedAt != null) {

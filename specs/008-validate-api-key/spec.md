@@ -30,16 +30,18 @@ motivo resolve isso sem forçar a biblioteca a decidir sozinha o que logar ou re
 
 ## Cenários (comportamento esperado)
 
-Executáveis em [`features/validate-api-key.feature`](../../src/test/resources/features/validate-api-key.feature)
+Executáveis em [`features/validate-api-key.feature`](../../api-key-validation/src/test/resources/features/validate-api-key.feature)
 (roda com `mvn verify`, junto com a suíte JUnit — ver `specs/006-executable-gherkin-scenarios`).
 
-- validate with no key presented (ausente/em branco)
+- validate with no key presented / validate a blank key
 - validate a key with the wrong format (prefixo ou tamanho errados)
 - validate a key that was never issued (hash não encontrado)
 - validate a revoked key
+- validate a key whose revocation is scheduled but not reached yet (ainda válida)
 - validate an expired key
 - validate a key that is both expired and revoked (revogada tem prioridade — mesma regra de `004-list-api-keys` FR1)
 - validate a currently active key (caminho feliz)
+- validate an active key that never expires
 
 ## Requisitos funcionais
 
