@@ -2,6 +2,7 @@ package dev.leilaalgarve.apikey.issuance;
 
 import dev.leilaalgarve.apikey.CliArgs;
 import dev.leilaalgarve.apikey.CliCommand;
+import dev.leilaalgarve.apikey.CliOutput;
 import dev.leilaalgarve.apikey.core.ApiKey;
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
@@ -45,7 +46,7 @@ public class GenerateCommand implements CliCommand {
     public int execute(String[] args, PrintStream out, PrintStream err) {
         String client = CliArgs.extractOption(args, "--client");
         if (client == null || client.isBlank()) {
-            err.println(client == null
+            CliOutput.println(err, client == null
                     ? "Error: --client is required."
                     : "Error: --client must not be blank.");
             return 1;
@@ -56,7 +57,7 @@ public class GenerateCommand implements CliCommand {
         if (validityDaysRaw != null) {
             validityDays = CliArgs.parsePositiveInt(validityDaysRaw);
             if (validityDays == null) {
-                err.println("Error: --validity-days must be a positive integer.");
+                CliOutput.println(err, "Error: --validity-days must be a positive integer.");
                 return 1;
             }
         }
@@ -66,7 +67,7 @@ public class GenerateCommand implements CliCommand {
         if (revokeOldInDaysRaw != null) {
             revokeOldInDays = CliArgs.parseNonNegativeInt(revokeOldInDaysRaw);
             if (revokeOldInDays == null) {
-                err.println("Error: --revoke-old-in-days must be zero or a positive integer.");
+                CliOutput.println(err, "Error: --revoke-old-in-days must be zero or a positive integer.");
                 return 1;
             }
         }
@@ -77,7 +78,7 @@ public class GenerateCommand implements CliCommand {
         try {
             keyHash = hasher.hash(plaintextKey);
         } catch (MissingHmacPepperException e) {
-            err.println("Error: HMAC pepper is not configured. Set the API_KEY_HMAC_PEPPER environment variable.");
+            CliOutput.println(err, "Error: HMAC pepper is not configured. Set the API_KEY_HMAC_PEPPER environment variable.");
             return 2;
         }
 
@@ -90,7 +91,7 @@ public class GenerateCommand implements CliCommand {
                 rotationResult = rotationPolicy.scheduleRevocationOfActiveKeys(client, revokeOldInDays);
             } catch (DataAccessException e) {
                 // Nothing else has been persisted yet in this attempt -- a plain return is enough.
-                err.println("Error: could not revoke the client's existing key(s). No key was printed.");
+                CliOutput.println(err, "Error: could not revoke the client's existing key(s). No key was printed.");
                 return 3;
             }
         }
@@ -107,25 +108,25 @@ public class GenerateCommand implements CliCommand {
                 // is a unit.
                 TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             }
-            err.println("Error: could not save the generated key. No key was printed.");
+            CliOutput.println(err, "Error: could not save the generated key. No key was printed.");
             return 3;
         }
 
         String expiryPhrase = expiresAt == null ? "does not expire" : "expires in " + validityDays + " days";
-        out.println("API key generated for client '" + client + "' (" + expiryPhrase + ").");
-        out.println("This is the only time the plaintext key is shown — store it now:");
-        out.println();
-        out.println(plaintextKey);
-        out.println();
+        CliOutput.println(out, "API key generated for client '" + client + "' (" + expiryPhrase + ").");
+        CliOutput.println(out, "This is the only time the plaintext key is shown — store it now:");
+        CliOutput.println(out);
+        CliOutput.println(out, plaintextKey);
+        CliOutput.println(out);
 
         if (rotationResult.updatedCount() > 0) {
             int rotatedCount = rotationResult.updatedCount();
             String keyWord = rotatedCount == 1 ? "key" : "keys";
             if (revokeOldInDays == 0) {
                 String verb = rotatedCount == 1 ? "has been revoked" : "have been revoked";
-                out.println(rotatedCount + " existing " + keyWord + " for client '" + client + "' " + verb + ".");
+                CliOutput.println(out, rotatedCount + " existing " + keyWord + " for client '" + client + "' " + verb + ".");
             } else {
-                out.println(rotatedCount + " existing " + keyWord + " for client '" + client
+                CliOutput.println(out, rotatedCount + " existing " + keyWord + " for client '" + client
                         + "' scheduled for revocation in " + revokeOldInDays + " days (on "
                         + rotationResult.revokedAt() + ").");
             }
