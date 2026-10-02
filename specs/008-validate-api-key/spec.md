@@ -62,10 +62,14 @@ Executáveis em [`features/validate-api-key.feature`](../../src/test/resources/f
      `ApiKeyFormat` (`api-key-core`), a mesma fonte que `ApiKeyGenerator` usa.
   3. Hash do `rawKey` (reaproveitando `ApiKeyHasher` já existente) não corresponde a nenhuma
      linha em `api_keys` → `NOT_FOUND`.
-  4. Chave encontrada e revogada (`ApiKey.isRevoked(Instant.now())`, já existente) → `REVOKED`
+  4. Chave encontrada e revogada (`ApiKey.isRevoked(now)`, já existente) → `REVOKED`
      — checado antes de `EXPIRED`, mesma prioridade de `004-list-api-keys` FR1.
-  5. Chave encontrada, não revogada, e expirada (`ApiKey.isExpired(Instant.now())`, já
+  5. Chave encontrada, não revogada, e expirada (`ApiKey.isExpired(now)`, já
      existente) → `EXPIRED`.
+
+  `now` vem de um `java.time.Clock` injetado no validador (`clock.instant()`, lido uma vez por
+  chamada), não de `Instant.now()` direto — para os testes fixarem o instante e cobrirem as
+  bordas de expiração/revogação de forma determinística.
   6. Caso contrário → `Valid(clientName)`.
 - FR5: `ApiKeyRepository` ganha `Optional<ApiKey> findByKeyHash(String keyHash)` — consulta
   indexada, já que `key_hash` tem `unique = true` desde `001-generate-api-key`.

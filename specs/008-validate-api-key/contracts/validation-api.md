@@ -37,22 +37,35 @@ public sealed interface ApiKeyValidationResult {
 ```java
 package dev.leilaalgarve.apikey.validation;
 
+@Component
 public class ApiKeyValidator {
-    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher) { ... }
+    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock) { ... }
+
+    @Autowired
+    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher,
+            ObjectProvider<Clock> clock) {
+        this(repository, hasher, clock.getIfAvailable(Clock::systemUTC));
+    }
 
     public ApiKeyValidationResult validate(String rawKey) { ... }
 }
 ```
 
-**Contrato de `validate`:**
+**`Clock`:** o instante de referência para revogação/expiração vem de `clock.instant()`, lido
+uma vez por chamada de `validate` — nunca `Instant.now()` direto. Testes passam um
+`Clock.fixed(...)` pelo construtor explícito. No Spring, o validador usa o bean `Clock` do
+consumidor se houver um; senão, `Clock.systemUTC()`. A biblioteca não registra bean `Clock`
+próprio, para não conflitar com um que o consumidor já tenha.
+
+**Contrato de `validate`** (`now = clock.instant()`):
 
 | Entrada | Saída |
 |---|---|
 | `null` ou `rawKey.isBlank()` | `Invalid(MISSING)` |
 | Não corresponde a `^dak_[A-Za-z0-9_-]{43}$` | `Invalid(MALFORMED)` |
 | Hash (via `ApiKeyHasher.hash`) não encontrado em `api_keys` | `Invalid(NOT_FOUND)` |
-| Encontrada e `isRevoked(Instant.now())` | `Invalid(REVOKED)` |
-| Encontrada, não revogada, e `isExpired(Instant.now())` | `Invalid(EXPIRED)` |
+| Encontrada e `isRevoked(now)` | `Invalid(REVOKED)` |
+| Encontrada, não revogada, e `isExpired(now)` | `Invalid(EXPIRED)` |
 | Encontrada, não revogada, não expirada | `Valid(clientName)` |
 
 - Nunca lança exceção para nenhuma das linhas acima — são resultados esperados do domínio.

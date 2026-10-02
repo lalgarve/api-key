@@ -14,8 +14,8 @@ Quebra `spec.md`/`plan.md` em tarefas pequenas, ordenadas, prontas para virar Is
 | T006 | `ApiKeyRepository.findByKeyHash(String): Optional<ApiKey>` | T004 | [P] | #23 |
 | T007 | `ApiKeyFailureReason` (enum: `MISSING`, `MALFORMED`, `NOT_FOUND`, `EXPIRED`, `REVOKED`) | T005 | [P] | #23 |
 | T008 | `ApiKeyValidationResult` (`sealed interface` + `record`s `Valid`/`Invalid`) | T007 | [P] | #23 |
-| T009 | `ApiKeyValidator.validate(String)` — formato, hash/lookup, precedência revogada-antes-de-expirada, nunca loga a chave em texto puro | T006, T008 | | #23 |
-| T010 | Testes unitários de `ApiKeyValidator` cobrindo cada ramo de `contracts/validation-api.md`, incluindo a chave simultaneamente expirada e revogada, e uma asserção de que `rawKey` nunca aparece em nenhuma linha de log | T009 | | #23 |
+| T009 | `ApiKeyValidator.validate(String)` — formato, hash/lookup, precedência revogada-antes-de-expirada, `now` via `Clock` injetado (fallback `Clock.systemUTC()`), nunca loga a chave em texto puro | T006, T008 | | #23 |
+| T010 | Testes unitários de `ApiKeyValidator` com `Clock.fixed` cobrindo cada ramo de `contracts/validation-api.md`, incluindo a chave simultaneamente expirada e revogada, as bordas exatas de `expires_at`/`revoked_at`, e uma asserção de que `rawKey` nunca aparece em nenhuma linha de log | T009 | | #23 |
 | T011 | `features/validate-api-key.feature` + step definitions em `api-key-validation` (reaproveitando a infraestrutura Cucumber de `006-executable-gherkin-scenarios`) | T009 | | #23 |
 | T012 | Revisar `http-integration.md` contra a API final de `ApiKeyValidator` e linkar o guia no README | T009 | [P] | #23 |
 | T013 | Rodar `mvn clean verify` e confirmar 100% verde (JUnit + Cucumber) em todos os módulos, mesma cobertura mínima de 80% por módulo | T010, T011 | | #23 |
