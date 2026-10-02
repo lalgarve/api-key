@@ -404,3 +404,56 @@ exatamente como documentados no README, confirmando as tabelas `api_key` e
 teste, pra ter schema de verdade pra conferir). `mvn clean verify` contra Postgres real
 (`SPRING_PROFILES_ACTIVE=docker`, banco recriado do zero com `docker compose down -v` antes,
 mesma isolação que o CI usa): 126/126 testes, sem nenhuma mudança de comportamento Java.
+
+Nova spec, `008-validate-api-key` (Issue #23): a biblioteca de leitura adiada desde a `001`,
+que o serviço protegido usa para validar a API-KEY recebida. `ApiKeyValidator.validate(chave)`
+devolve um `ApiKeyValidationResult` tipado — `Valid(clientName)` ou `Invalid(motivo)`, com o
+motivo em `MISSING`, `MALFORMED`, `NOT_FOUND`, `EXPIRED` ou `REVOKED` — em vez de um `boolean`.
+Revogada tem prioridade sobre expirada, mesma regra da `004`. A biblioteca não loga nada nem
+decide a resposta HTTP: isso fica com o consumidor.
+
+Quatro decisões resolvidas antes de implementar (commits `decision:`): módulos Maven separados
+(como a `001` já previa), `RATE_LIMITED` fora do enum (limite de requisições é política de
+tráfego, não propriedade da chave), integração HTTP só como documentação
+(`specs/008-validate-api-key/http-integration.md`, com filtro e com interceptor +
+`@RestControllerAdvice`) e um `Clock` injetado no validador, para testar as bordas de
+expiração/revogação de forma determinística.
+
+O projeto virou multi-módulo: `api-key-core` (entidade, repositório, hasher, o novo
+`ApiKeyFormat` e as migrations), `api-key-validation` e `api-key-cli`. O refactor foi feito
+antes da feature, em commits `refactor:` próprios, conferindo a cada passo que os 126 testes
+originais continuavam passando. O jar da CLI mantém o nome `api-key-<versão>.jar`, agora em
+`api-key-cli/target/`. Os testes da validação sobem a partir de uma aplicação de teste num
+pacote de fora (`example.consumer`), com exatamente a configuração que o guia de integração
+manda o consumidor usar — se o guia ficar errado, os testes param de subir.
+
+Dois problemas só apareceram rodando de verdade:
+- Com o perfil `docker` (Postgres real, como no CI), os cenários Cucumber da validação deixavam
+  linhas na tabela compartilhada entre os módulos e quebravam 8 testes da CLI que esperam só as
+  próprias linhas. No H2 não aparecia, porque lá cada módulo tem seu banco em memória.
+  Corrigido apagando, ao fim de cada cenário, as chaves que ele criou.
+- No Windows, 36 dos 126 testes da `main` já falhavam antes desta mudança: a CLI imprime `\r\n`
+  e os testes esperam `\n`. O CI (Linux) não é afetado; registrado como tarefa à parte. A
+  validação desta spec foi feita num container Linux, igual ao CI.
+
+Validado com `mvn verify` no H2 e contra um PostgreSQL 16 novo com o perfil `docker`: 177
+testes nos dois (32 core, 42 validação incluindo 12 cenários, 103 CLI), 0 falhas, cobertura de
+linha 94,1% / 100% / 99,2%. O jar da CLI também foi rodado contra Postgres (`generate` e
+`list`), confirmando que o Flyway encontra as migrations dentro do jar do core. Um teste de
+mutação (fazer expirada ganhar de revogada) quebrou tanto o teste JUnit quanto o cenário
+Gherkin correspondente.
+
+**Commits:**
+- `5e56704` feat: add draft spec for validate-api-key (008)
+- `5b39688` decision: resolve open decisions for validate-api-key (008)
+- `b06e8f2` decision: inject a Clock into ApiKeyValidator (008)
+- `74f31f3` refactor: turn the build into a Maven aggregator with an api-key-cli module
+- `2824d02` refactor: extract the api-key-core module
+- `c9fdf62` refactor: extract ApiKeyFormat as the single source of the key shape
+- `d39fb70` feat: add the api-key-validation library
+- `fc861e1` test: add executable Gherkin scenarios for validate-api-key
+- `77eab36` fix: delete the keys each validate-api-key scenario issues
+- `4ab306b` docs: document the validation library in the README and integration guide
+
+**Issues:** #23. Mensagens de commit anteriores a `77eab36` citam totais de testes menores, de
+um script de contagem que errava; os números certos (do próprio Maven) são os acima.

@@ -39,7 +39,8 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         uses: madrapps/jacoco-report@v1.7
         with:
-          paths: target/site/jacoco/jacoco.xml
+          # One report per Maven module (api-key-core, api-key-validation, api-key-cli).
+          paths: ${{ github.workspace }}/**/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 80
           min-coverage-changed-files: 0

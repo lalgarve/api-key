@@ -1,9 +1,0 @@
-package dev.leilaalgarve.apikey.issuance;
-
-import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface ApiKeyRepository extends JpaRepository<ApiKey, Long> {
-
-    List<ApiKey> findByClientName(String clientName);
-}

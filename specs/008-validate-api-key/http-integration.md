@@ -14,12 +14,22 @@ mantida — quando houver um consumidor real, a integração escolhida pode vira
    base do consumidor normalmente não cobre `dev.leilaalgarve.apikey`:
 
    ```java
+   import org.springframework.boot.persistence.autoconfigure.EntityScan; // Spring Boot 4
+   import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
    @SpringBootApplication(scanBasePackages = {"com.example.mail",
            "dev.leilaalgarve.apikey.validation", "dev.leilaalgarve.apikey.core"})
    @EntityScan("dev.leilaalgarve.apikey.core")
    @EnableJpaRepositories("dev.leilaalgarve.apikey.core")
    public class MailServiceApplication { ... }
    ```
+
+   `@EntityScan` e `@EnableJpaRepositories` **substituem** a varredura padrão (o pacote da
+   aplicação) em vez de somar a ela: se o serviço tiver entidades/repositórios JPA próprios,
+   liste os pacotes dele também (ex.: `@EntityScan({"com.example.mail",
+   "dev.leilaalgarve.apikey.core"})`). Esta configuração exata é a que os testes de
+   `api-key-validation` usam para subir (`example.consumer.ConsumerTestApplication`), então
+   ela é verificada a cada `mvn verify`.
 
 3. Mesmo banco populado pela CLI e a mesma variável `API_KEY_HMAC_PEPPER` — com outro pepper,
    todo hash calculado diverge e toda chave volta `NOT_FOUND`.
