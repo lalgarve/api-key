@@ -15,5 +15,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # Inspeção manual do banco via navegador -- nunca sobe junto com `docker compose up -d`
+  # (sem argumento) nem com o `docker compose up -d --wait db` do CI, já que ambos nomeiam só
+  # `db`; o profile é só uma segunda garantia disso. Ver README.md, "Operação: inspecionar o
+  # banco manualmente com Adminer".
+  adminer:
+    image: adminer
+    profiles:
+      - tools
+    # A imagem oficial escuta em "[::]:8080" por padrão (IPv6), que falha ao iniciar em hosts
+    # sem IPv6 habilitado (ex.: WSL com IPv6 desligado, algumas VPS/sandboxes). 0.0.0.0
+    # funciona em qualquer host.
+    command: ["php", "-S", "0.0.0.0:8080", "-t", "/var/www/html"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
 volumes:
   db_data:
