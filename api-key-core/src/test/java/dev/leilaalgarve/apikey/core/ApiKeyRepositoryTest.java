@@ -57,4 +57,22 @@ class ApiKeyRepositoryTest {
         ApiKey reloaded = repository.findById(saved.getId()).orElseThrow();
         assertThat(reloaded.getRevokedAt()).isEqualTo(revokedAt);
     }
+
+    @Test
+    void findsAKeyByItsHash() {
+        ApiKey saved = repository.save(new ApiKey(
+                "jogo-acoes", "hash-lookup", Instant.now().truncatedTo(ChronoUnit.MICROS), null));
+        repository.save(new ApiKey(
+                "billing", "hash-other", Instant.now().truncatedTo(ChronoUnit.MICROS), null));
+
+        assertThat(repository.findByKeyHash("hash-lookup"))
+                .get()
+                .extracting(ApiKey::getId, ApiKey::getClientName)
+                .containsExactly(saved.getId(), "jogo-acoes");
+    }
+
+    @Test
+    void findByKeyHashIsEmptyForAnUnknownHash() {
+        assertThat(repository.findByKeyHash("never-issued")).isEmpty();
+    }
 }
