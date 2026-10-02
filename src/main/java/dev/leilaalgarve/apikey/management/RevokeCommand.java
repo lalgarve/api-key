@@ -2,6 +2,7 @@ package dev.leilaalgarve.apikey.management;
 
 import dev.leilaalgarve.apikey.CliArgs;
 import dev.leilaalgarve.apikey.CliCommand;
+import dev.leilaalgarve.apikey.CliOutput;
 import dev.leilaalgarve.apikey.issuance.ApiKey;
 import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
 import java.io.PrintStream;
@@ -31,12 +32,12 @@ public class RevokeCommand implements CliCommand {
     public int execute(String[] args, PrintStream out, PrintStream err) {
         String idRaw = CliArgs.extractOption(args, "--id");
         if (idRaw == null) {
-            err.println("Error: --id is required.");
+            CliOutput.println(err, "Error: --id is required.");
             return 1;
         }
         Long id = CliArgs.parseLong(idRaw);
         if (id == null) {
-            err.println("Error: --id must be a number.");
+            CliOutput.println(err, "Error: --id must be a number.");
             return 1;
         }
 
@@ -45,25 +46,25 @@ public class RevokeCommand implements CliCommand {
         if (inDaysRaw != null) {
             inDays = CliArgs.parsePositiveInt(inDaysRaw);
             if (inDays == null) {
-                err.println("Error: --in-days must be a positive integer.");
+                CliOutput.println(err, "Error: --in-days must be a positive integer.");
                 return 1;
             }
         }
 
         Optional<ApiKey> found = repository.findById(id);
         if (found.isEmpty()) {
-            err.println("Error: no API key found with id " + id + ".");
+            CliOutput.println(err, "Error: no API key found with id " + id + ".");
             return 2;
         }
         ApiKey apiKey = found.get();
 
         Instant now = Instant.now();
         if (apiKey.isRevoked(now)) {
-            err.println("Error: API key " + id + " is already revoked.");
+            CliOutput.println(err, "Error: API key " + id + " is already revoked.");
             return 3;
         }
         if (apiKey.isExpired(now)) {
-            err.println("Error: API key " + id + " already expired on " + apiKey.getExpiresAt()
+            CliOutput.println(err, "Error: API key " + id + " already expired on " + apiKey.getExpiresAt()
                     + "; nothing to revoke.");
             return 5;
         }
@@ -71,7 +72,7 @@ public class RevokeCommand implements CliCommand {
         Instant revokedAt = inDays == null ? now : now.plus(inDays, ChronoUnit.DAYS);
         Instant expiresAt = apiKey.getExpiresAt();
         if (expiresAt != null && revokedAt.isAfter(expiresAt)) {
-            err.println("Error: --in-days would schedule the revocation after the key already expires (expires at "
+            CliOutput.println(err, "Error: --in-days would schedule the revocation after the key already expires (expires at "
                     + expiresAt + ").");
             return 1;
         }
@@ -80,14 +81,14 @@ public class RevokeCommand implements CliCommand {
         try {
             repository.save(apiKey);
         } catch (DataAccessException e) {
-            err.println("Error: could not revoke the key. No change was saved.");
+            CliOutput.println(err, "Error: could not revoke the key. No change was saved.");
             return 4;
         }
 
         if (inDays == null) {
-            out.println("API key " + id + " for client '" + apiKey.getClientName() + "' has been revoked.");
+            CliOutput.println(out, "API key " + id + " for client '" + apiKey.getClientName() + "' has been revoked.");
         } else {
-            out.println("API key " + id + " for client '" + apiKey.getClientName() + "' will be revoked in "
+            CliOutput.println(out, "API key " + id + " for client '" + apiKey.getClientName() + "' will be revoked in "
                     + inDays + " days (on " + revokedAt + ").");
         }
         return 0;

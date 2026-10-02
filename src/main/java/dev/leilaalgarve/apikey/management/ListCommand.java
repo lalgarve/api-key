@@ -2,6 +2,7 @@ package dev.leilaalgarve.apikey.management;
 
 import dev.leilaalgarve.apikey.CliArgs;
 import dev.leilaalgarve.apikey.CliCommand;
+import dev.leilaalgarve.apikey.CliOutput;
 import dev.leilaalgarve.apikey.issuance.ApiKey;
 import dev.leilaalgarve.apikey.issuance.ApiKeyRepository;
 import java.io.PrintStream;
@@ -37,7 +38,7 @@ public class ListCommand implements CliCommand {
         if (status == null) {
             status = "active";
         } else if (!VALID_STATUSES.contains(status)) {
-            err.println("Error: --status must be one of: active, expired, revoked, all.");
+            CliOutput.println(err, "Error: --status must be one of: active, expired, revoked, all.");
             return 1;
         }
 
@@ -47,12 +48,12 @@ public class ListCommand implements CliCommand {
         Integer revokingWithinDays = null;
         if (revokingWithinDaysRaw != null) {
             if (!"active".equals(status)) {
-                err.println("Error: --revoking-within-days can only be used with --status active.");
+                CliOutput.println(err, "Error: --revoking-within-days can only be used with --status active.");
                 return 1;
             }
             revokingWithinDays = CliArgs.parsePositiveInt(revokingWithinDaysRaw);
             if (revokingWithinDays == null) {
-                err.println("Error: --revoking-within-days must be a positive integer.");
+                CliOutput.println(err, "Error: --revoking-within-days must be a positive integer.");
                 return 1;
             }
         }
@@ -74,7 +75,7 @@ public class ListCommand implements CliCommand {
         matching.sort(Comparator.comparing(ApiKey::getCreatedAt));
 
         if (matching.isEmpty()) {
-            out.println("No API keys found for the given filters.");
+            CliOutput.println(out, "No API keys found for the given filters.");
             return 0;
         }
 
@@ -118,7 +119,7 @@ public class ListCommand implements CliCommand {
                     line.append("  ");
                 }
             }
-            out.println(line.toString().stripTrailing());
+            CliOutput.println(out, line.toString().stripTrailing());
         }
     }
 
