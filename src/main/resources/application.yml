@@ -1,6 +1,6 @@
 spring:
   application:
-    name: deployo-api-key
+    name: api-key
   main:
     # CLI, not a web server -- no embedded Tomcat needed for the generate command.
     web-application-type: none
