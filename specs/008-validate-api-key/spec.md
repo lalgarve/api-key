@@ -1,6 +1,6 @@
 # Spec: validate-api-key
 
-**Status:** rascunho
+**Status:** aprovada — implementada (T000-T014 concluídas)
 **Issue:** #23
 
 ## Resumo
