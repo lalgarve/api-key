@@ -374,3 +374,33 @@ documentação de uso corrente. `docker-compose.yml`/`application-docker.yml` (n
 pedido, mesmo precedente de `005` (nome de banco de dados não é o pacote Java nem o artefato
 Maven). Validado com `mvn clean verify`: 126/126 testes, jar final agora
 `target/api-key-0.0.1-SNAPSHOT.jar`, cobertura mantida.
+
+**Commits:**
+- `4ffceb7` refactor: rename Maven artifact from deployo-api-key to api-key
+- `a33ecdf` docs: log the artifact rename to api-key in the diary
+
+**Issues:** nenhuma aberta — mudança pequena o suficiente para não precisar de Issue própria.
+
+Nova spec, `007-adminer-manual-testing`: serviço opcional do Adminer em `docker-compose.yml`
+para inspecionar manualmente, via navegador, o Postgres do perfil `docker` — sem precisar de
+cliente SQL instalado à parte. Atrás de um `profiles` do Docker Compose (`tools`), então não
+sobe num `docker compose up -d` comum nem no `docker compose up -d --wait db` que o CI já usa
+(ambos nomeiam só `db`). `README.md` ganhou uma seção documentando o comando pra subir o
+Adminer e os dados de conexão a preencher na tela de login, reaproveitando as credenciais já
+existentes do serviço `db` em vez de duplicar um segundo conjunto. Sem `plan.md` — mesmo
+racional da 005, mudança pequena e mecânica.
+
+Uma decisão técnica só apareceu na prática, não no planejamento: a imagem oficial do Adminer
+escuta em `[::]:8080` (IPv6) por padrão, que falha ao iniciar em qualquer host sem IPv6
+utilizável (reproduzido no sandbox desta sessão, mas também afeta WSL com IPv6 desligado e
+outras VPS/ambientes restritos) — corrigido sobrescrevendo o `command` do serviço pra escutar
+em `0.0.0.0:8080` explicitamente, que funciona em qualquer host.
+
+Validado de ponta a ponta, não só lendo a config: `docker compose up -d --wait db` sozinho (o
+mesmo comando do CI) confirmado sem subir o Adminer; `docker compose up -d db adminer` subindo
+os dois; login real no Adminer automatizado via Playwright/Chromium headless, com os dados
+exatamente como documentados no README, confirmando as tabelas `api_key` e
+`flyway_schema_history` (criadas rodando o jar com `SPRING_PROFILES_ACTIVE=docker` antes do
+teste, pra ter schema de verdade pra conferir). `mvn clean verify` contra Postgres real
+(`SPRING_PROFILES_ACTIVE=docker`, banco recriado do zero com `docker compose down -v` antes,
+mesma isolação que o CI usa): 126/126 testes, sem nenhuma mudança de comportamento Java.

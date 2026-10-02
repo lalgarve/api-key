@@ -78,6 +78,33 @@ receber uma chave nova. Trate o valor do pepper como um segredo crítico:
   equivalente a revogar todas de uma vez. Não há suporte (ainda) a múltiplos peppers válidos
   simultaneamente para uma rotação gradual.
 
+## Operação: inspecionar o banco manualmente com Adminer
+
+Para conferir manualmente, direto no banco, o efeito de um comando da CLI rodado contra o
+perfil `docker` (ex.: depois de um `revoke`/`generate`, ver as linhas da tabela `api_key`), o
+`docker-compose.yml` deste projeto tem um serviço opcional do [Adminer](https://www.adminer.org/)
+— cliente de banco de dados via navegador, sem precisar instalar nada além do que o projeto já
+usa (Docker). Ele fica atrás de um profile do Docker Compose, então **não** sobe junto com um
+`docker compose up -d` comum nem com o que o CI já usa — só quando pedido explicitamente:
+
+```
+docker compose up -d db adminer
+```
+
+Depois, abra `http://localhost:8080` no navegador e preencha a tela de login do Adminer com os
+mesmos valores já definidos em `docker-compose.yml` para o serviço `db`:
+
+| Campo | Valor |
+|---|---|
+| Sistema | PostgreSQL |
+| Servidor | `db` |
+| Usuário | `deployo_api_key_admin` |
+| Senha | `deployo_api_key_admin` |
+| Banco de dados | `deployo_api_key` |
+
+Para encerrar, `docker compose down` (ou `docker compose stop adminer` para só parar o
+Adminer, mantendo o banco no ar).
+
 ## Metodologia de desenvolvimento
 
 Este projeto usa Spec-Driven Development (SDD):
