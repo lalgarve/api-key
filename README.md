@@ -60,6 +60,36 @@ Ver [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-
 e [`specs/004-list-api-keys/contracts/cli-commands.md`](specs/004-list-api-keys/contracts/cli-commands.md)
 para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
+## Validando uma API-KEY no serviço protegido
+
+O projeto é multi-módulo Maven:
+
+| Módulo | Para quê |
+|---|---|
+| `api-key-core` | Entidade, repositório, hash e formato da chave, migrations do schema |
+| `api-key-validation` | Biblioteca que o serviço protegido usa para validar a chave recebida |
+| `api-key-cli` | A CLI acima (`mvn package` gera `api-key-cli/target/api-key-<versão>.jar`) |
+
+O serviço protegido depende só de `api-key-validation` — sem trazer a CLI nem o Flyway — e
+chama `ApiKeyValidator.validate(chaveRecebida)`, que devolve um resultado tipado:
+
+```java
+switch (validator.validate(request.getHeader("X-API-Key"))) {
+    case ApiKeyValidationResult.Valid valid -> {
+        // valid.clientName() é o --client usado ao gerar a chave
+    }
+    case ApiKeyValidationResult.Invalid invalid -> {
+        // invalid.reason(): MISSING, MALFORMED, NOT_FOUND, EXPIRED ou REVOKED
+    }
+}
+```
+
+Ele precisa do mesmo banco e do mesmo `API_KEY_HMAC_PEPPER` desta instância. O que responder
+ao chamador para cada motivo fica com o serviço — ver o
+[guia de integração HTTP](specs/008-validate-api-key/http-integration.md) (filtro ou
+interceptor + `@RestControllerAdvice`) e o
+[contrato da biblioteca](specs/008-validate-api-key/contracts/validation-api.md).
+
 ## Operação: backup do pepper do HMAC
 
 O hash de cada chave é calculado com HMAC-SHA256 usando um pepper lido da variável de
