@@ -7,7 +7,7 @@ OpenAPI, mas para a interface de linha de comando.
 
 **Uso:**
 ```
-deployo-api-key <comando> [opções]
+api-key <comando> [opções]
 ```
 
 **Argumentos:**

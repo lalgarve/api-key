@@ -1,4 +1,4 @@
-# deployo-api-key
+# api-key
 
 Biblioteca e aplicação Java para gerar API-KEY pela linha de comando.
 
@@ -31,9 +31,9 @@ para o contexto acadêmico completo.
 
 ```
 export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
-java -jar deployo-api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
-java -jar deployo-api-key.jar revoke --id 3 [--in-days 14]
-java -jar deployo-api-key.jar list [--status active|expired|revoked|all] [--client jogo-acoes] [--revoking-within-days 30]
+java -jar api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
+java -jar api-key.jar revoke --id 3 [--in-days 14]
+java -jar api-key.jar list [--status active|expired|revoked|all] [--client jogo-acoes] [--revoking-within-days 30]
 ```
 
 A chave em texto puro é impressa **uma única vez**, na hora da geração — guarde-a

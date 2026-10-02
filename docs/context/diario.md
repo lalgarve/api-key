@@ -353,3 +353,24 @@ Validado com `mvn clean verify` repetido 3 vezes (descartar instabilidade): 126/
 - `6b4507b` docs: point specs 001-004 at their executable .feature files (T009)
 
 **Issues:** #18 — todas as tarefas concluídas.
+
+## 2026-10-02
+
+**Resumo:** A autora renomeou o repositório no GitHub de `deployo-api-key` para `api-key`
+(domínio `deployo.io` não é mais de posse da autora — mesmo motivo que já tinha levado à
+renomeação do pacote Java em `005-refactor-pacote-base`). Git e os links antigos continuam
+funcionando via redirecionamento automático do GitHub, mas o `artifactId`/`name` do `pom.xml`
+ainda diziam `deployo-api-key` — inconsistente com o nome real do artefato/repositório agora.
+Ajustado para `api-key`: `pom.xml` (`artifactId`, `name`), `spring.application.name` em
+`application.yml` (mesma identidade, usada em logs/actuator se algum dia houver), os três
+exemplos de `java -jar ...jar` do `README.md` (o nome do `.jar` final deriva do `artifactId`:
+`api-key-0.0.1-SNAPSHOT.jar`, então `deployo-api-key.jar` ficaria incorreto) e o exemplo
+genérico em `templates/contracts-template.md` (guia futuras specs, não é registro histórico).
+Os contratos já aprovados de `specs/001` a `004` (`contracts/cli-commands.md`) e a entrada de
+`specs/005` que documenta a decisão da época de *não* mudar o nome do artefato foram deixados
+como estão — são registro do que foi decidido e implementado naquele momento, não a
+documentação de uso corrente. `docker-compose.yml`/`application-docker.yml` (nome do banco
+`deployo_api_key`/usuário `deployo_api_key_admin`) também ficaram de fora — fora do escopo
+pedido, mesmo precedente de `005` (nome de banco de dados não é o pacote Java nem o artefato
+Maven). Validado com `mvn clean verify`: 126/126 testes, jar final agora
+`target/api-key-0.0.1-SNAPSHOT.jar`, cobertura mantida.

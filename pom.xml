@@ -12,9 +12,9 @@
   </parent>
 
   <groupId>dev.leilaalgarve.apikey</groupId>
-  <artifactId>deployo-api-key</artifactId>
+  <artifactId>api-key</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>deployo-api-key</name>
+  <name>api-key</name>
   <description>Biblioteca e aplicacao Java para criar API-KEY pela linha de comando</description>
 
   <properties>
