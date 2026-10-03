@@ -149,10 +149,12 @@ Feature: environment (black box)
 - FR10: Cenários de uma feature ainda não implementada (hoje `010` e `011`) são marcados com
   uma tag (`@pending`) e não quebram a suíte enquanto a tag existir; a tag sai no mesmo PR que
   implementa a feature.
-- FR11: A suíte roda no CI em toda PR, e a PR fica vermelha se algum cenário sem `@pending`
-  falhar (ver "Decisões em aberto" sobre onde exatamente ela roda).
+- FR11: A suíte roda num passo próprio, separado do `mvn verify`, e só quando alguém pede: no
+  CI, por um workflow disparado manualmente (`workflow_dispatch`), nunca automaticamente em
+  push ou PR. O `mvn verify` e o check obrigatório do CI continuam só com a suíte Java. Quando
+  disparada, a execução fica vermelha se algum cenário sem `@pending` falhar.
 - FR12: Um único comando, documentado no `README.md`, roda a suíte localmente depois de
-  `mvn package`.
+  `mvn package`. Esse comando também é o que o workflow manual de FR11 executa.
 
 ## Requisitos não-funcionais
 
@@ -177,22 +179,19 @@ Feature: environment (black box)
   suíte Java.
 - Testar a biblioteca `api-key-validation` dentro de um serviço protegido (HTTP).
 - Rodar os cenários em paralelo.
+- Rodar a suíte automaticamente em toda PR ou como check obrigatório antes do merge (ver FR11).
 
 ## Decisões em aberto
 
-- **Onde a suíte roda no build.** Duas opções:
-  1. Passo próprio no CI, depois do `mvn verify`, no mesmo job (recomendado: o `mvn verify`
-     continua só Java e não passa a exigir Python em todo ambiente; o CI continua com um único
-     check obrigatório).
-  2. Dentro do `mvn verify`, por um plugin Maven que chama o Python na fase
-     `integration-test` (um só comando para tudo, como pede `006` "Requisitos
-     não-funcionais", mas todo ambiente que roda `mvn verify` passa a precisar de Python).
-- **Banco da suíte.** Usar o mesmo banco `deployo_api_key` dos testes Java, isolando só por
-  nome de cliente (FR6, recomendado: nada novo para provisionar), ou um banco separado só para
-  a suíte caixa-preta (isolamento total, mas exige criar o banco no `docker-compose.yml`, no
-  CI e no script de setup do sandbox). Como a CLI não tem comando de apagar chave, na primeira
-  opção as chaves criadas pela suíte ficam no banco; o sistema está em pré-produção
-  (`memory/constitution.md`), então isso não protege nenhum dado real.
+Nenhuma. As duas que estavam pendentes foram resolvidas em 2026-10-03:
+
+- **Onde a suíte roda:** passo próprio, separado do `mvn verify`, executado só quando
+  solicitado (decisão da Leila; ver FR11). Assim o `mvn verify` não passa a exigir Python, e a
+  suíte, mais lenta por subir um processo Java a cada comando, não pesa em toda PR.
+- **Banco da suíte:** o mesmo banco `deployo_api_key` dos testes Java, com cada cenário isolado
+  por nome de cliente único (FR6). Como a CLI não tem comando de apagar chave, as chaves criadas
+  pela suíte ficam no banco; o sistema está em pré-produção (`memory/constitution.md`), então
+  isso não afeta nenhum dado real.
 
 Decisões técnicas (framework BDD em Python, como achar o jar, como gerar nomes únicos) ficam
 em `plan.md`.
