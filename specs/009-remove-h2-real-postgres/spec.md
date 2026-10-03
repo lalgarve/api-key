@@ -8,8 +8,9 @@
 H2 sai do projeto inteiro: da suíte de testes automatizados (`mvn test`/`mvn verify`) dos três
 módulos (`api-key-core`, `api-key-validation`, `api-key-cli`) e do perfil `sandbox` da CLI. Os
 dois passam a usar PostgreSQL real. A suíte usa o Postgres que já está de pé via
-`docker-compose.yml` (serviço `db`). O perfil `sandbox` usa um Postgres já disponível no
-ambiente, nativo ou via compose (ver "Decisões em aberto"). Se não houver Postgres de pé, os
+`docker-compose.yml` (serviço `db`). O perfil `sandbox` usa o PostgreSQL nativo do ambiente
+sandbox da Claude, o mesmo do `jogo-acoes` (ver "Contexto técnico" em `plan.md`). Se não houver
+Postgres de pé, os
 testes falham alto, com erro de conexão. Não existe fallback silencioso para um substituto mais
 fraco.
 
@@ -35,9 +36,10 @@ dos dois: o escopo é só H2.
    `application.yml` de teste fixa os de H2, e `DeployoApiKeyApplicationTests` sobrescrevendo URL e
    driver porque o perfil `docker` ganhava. Esse tipo de interação só aparece no CI. Com um banco
    só, os remendos somem.
-4. **O motivo original do H2 no `sandbox` ("No Docker/Postgres available here") deixou de valer
-   no `jogo-acoes`.** O ambiente sandbox de lá ganhou Postgres nativo. Se o mesmo valer aqui (ver
-   "Decisões em aberto"), não sobra razão para manter H2 em lugar nenhum.
+4. **O motivo original do H2 no `sandbox` ("No Docker/Postgres available here") deixou de
+   valer.** O ambiente sandbox da Claude, o mesmo do `jogo-acoes`, tem PostgreSQL nativo, e o
+   script de setup desse ambiente passa a criar também o banco do api-key. Não sobra razão para
+   manter H2 em lugar nenhum.
 
 ## Cenários (comportamento esperado)
 
@@ -56,6 +58,8 @@ ambiente, e não há `.feature` novo. O comportamento esperado é sobre a suíte
 - O CI continua verde, com o mesmo `docker compose up -d --wait db` de hoje.
 - `SPRING_PROFILES_ACTIVE=sandbox` (o padrão da CLI) sobe contra PostgreSQL real e aplica
   `db/migration`.
+- No ambiente sandbox da Claude (sem Docker, com Postgres nativo), `mvn clean verify` roda a
+  suíte inteira contra esse Postgres e passa. Nenhum teste é pulado por falta de infraestrutura.
 
 ## Requisitos funcionais
 
@@ -81,18 +85,14 @@ ambiente, e não há `.feature` novo. O comportamento esperado é sobre a suíte
 ## Fora de escopo
 
 - Testcontainers e LocalStack. Não existem neste projeto, e a spec não os introduz.
-- Provisionar Postgres nativo no ambiente sandbox (script de setup, clusters). Se existir, fica
-  fora deste repositório. Esta spec só aponta a configuração para ele.
+- Versionar o script de setup do ambiente sandbox. Ele fica fora deste repositório (é
+  compartilhado com o `jogo-acoes`). Esta spec só registra em `plan.md` o bloco que o api-key
+  precisa nele e aponta a configuração para esse Postgres.
 - Isolamento entre execuções concorrentes da suíte no mesmo Postgres (ex.: duas sessões rodando
   `mvn verify` ao mesmo tempo). O alvo é a repetibilidade sequencial.
 - Qualquer mudança de comportamento de produção de `generate`/`revoke`/`list`/validação.
 
 ## Decisões em aberto
 
-- **Qual Postgres o perfil `sandbox` usa?** No `jogo-acoes`, o ambiente sandbox da Claude tem
-  Postgres nativo provisionado fora do repositório, mas com os bancos e roles daquele projeto.
-  Falta confirmar se o mesmo ambiente provisiona (ou pode provisionar) `deployo_api_key` com o
-  role `deployo_api_key_admin`. Também é preciso escolher a porta: no `jogo-acoes` a 5432 é do
-  `jogo_acoes`. Se não houver Postgres nativo, as alternativas são o `sandbox` passar a exigir
-  `docker compose up db` (e aí fica igual ao `docker`, o que questiona a existência do perfil) ou
-  o perfil ser removido.
+- Nenhuma. A única que havia (qual Postgres o perfil `sandbox` usa) foi resolvida em `plan.md`:
+  o Postgres nativo do ambiente sandbox, cluster `16/main`, porta 5432, banco `deployo_api_key`.
