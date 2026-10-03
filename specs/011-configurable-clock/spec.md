@@ -82,6 +82,20 @@ Scenario: a non-integer offset is rejected
   Then the exit code is 1
   And stderr is "Error: --clock-offset-days must be an integer (negative, zero or positive)."
 
+Scenario: clock options are refused in staging
+  Given the active Spring profile is "staging"
+  When I run "list --clock-offset-days 31"
+  Then the exit code is 1
+  And stderr is "Error: clock options are not allowed in the staging or production environment."
+  And the database is not read or written
+
+Scenario: clock options are refused in production
+  Given the active Spring profile is "production"
+  When I run "generate --client acme --clock-start 2026-01-01"
+  Then the exit code is 1
+  And stderr is "Error: clock options are not allowed in the staging or production environment."
+  And no key is generated
+
 Scenario: a simulated clock is always announced
   When I run "list --clock-offset-days 31"
   Then stderr contains "Warning: simulated clock in use; now is"
@@ -106,7 +120,7 @@ Scenario: a simulated clock is always announced
   passar a opção.
 - FR4: As duas opções são globais: aceitas por qualquer comando (`generate`, `revoke`, `list`,
   `check`), em qualquer posição depois da palavra do comando, e nunca obrigatórias.
-- FR5: Passar as duas opções na mesma execução é erro de uso (exit code 1), checado antes de
+- FR5: Passar as duas opções na mesma execução é erro de uso (exit code 1), checado logo depois da checagem de ambiente de FR8, antes de
   qualquer outra validação do comando e antes de qualquer leitura ou escrita no banco.
 - FR6: Valor inválido em qualquer das duas opções é erro de uso (exit code 1), com as
   mensagens dos cenários acima, também antes de qualquer acesso ao banco.
@@ -114,10 +128,19 @@ Scenario: a simulated clock is always announced
   `--clock-offset-days 0`), a CLI imprime em stderr, antes da saída do comando,
   `Warning: simulated clock in use; now is <instante UTC>.` A saída em stdout continua
   idêntica ao contrato de cada comando, para não quebrar quem lê stdout.
-- FR8: Datas gravadas sob relógio simulado (`created_at`, `expires_at`, `revoked_at`) são
+- FR8: Quando o perfil Spring ativo é `staging` ou `production` (nomes de
+  `memory/constitution.md`, "Nomenclatura de ambientes"), qualquer das duas opções de relógio,
+  inclusive `--clock-offset-days 0`, é recusada com exit code 1 e a mensagem
+  `Error: clock options are not allowed in the staging or production environment.` A recusa
+  acontece antes de qualquer outra validação, inclusive a de FR5/FR6, e antes de qualquer
+  acesso ao banco. Nos perfis `sandbox` e `docker` as opções são aceitas.
+- FR9: O relógio só é configurado pelas opções de linha de comando. Nenhuma variável de
+  ambiente nem propriedade em `application*.yml` muda o relógio, para que um relógio simulado
+  apareça sempre no próprio comando.
+- FR10: Datas gravadas sob relógio simulado (`created_at`, `expires_at`, `revoked_at`) são
   gravadas como vieram do relógio simulado, sem nenhuma marca no banco. O sistema está em
   pré-produção (ver `memory/constitution.md`), então não há dado real a proteger.
-- FR9: A biblioteca `api-key-validation` não muda: ela já recebe o `Clock` do serviço que a
+- FR11: A biblioteca `api-key-validation` não muda: ela já recebe o `Clock` do serviço que a
   consome. Esta feature não cria nenhuma opção de relógio para o serviço protegido.
 
 ## Requisitos não-funcionais
@@ -130,19 +153,14 @@ Scenario: a simulated clock is always announced
 ## Fora de escopo
 
 - Relógio congelado (um instante fixo que não avança durante a execução).
-- Configurar o relógio por variável de ambiente ou por `application*.yml` (ver "Decisões em
-  aberto").
+- Configurar o relógio por variável de ambiente ou por `application*.yml` (ver FR9).
 - Unidades menores que um dia em `--clock-offset-days` (horas, minutos) ou fusos diferentes de
   UTC em `--clock-start`.
 - Qualquer relógio configurável dentro de `api-key-validation` ou no serviço protegido.
-- Bloquear as opções por perfil/ambiente (ver "Decisões em aberto").
+- Criar os perfis `staging` e `production`: eles ainda não existem; FR8 só define o que
+  acontece quando um deles estiver ativo.
 
 ## Decisões em aberto
 
-- Variável de ambiente: aceitar também `API_KEY_CLOCK_START`/`API_KEY_CLOCK_OFFSET_DAYS`, para
-  simular uma sequência inteira de comandos sem repetir a opção em cada um? Proposta deste
-  rascunho: não, só as opções de linha de comando, para o relógio simulado ser sempre visível
-  no próprio comando.
-- Restrição por ambiente: hoje tudo é pré-produção. Quando existir `staging`/`production`, as
-  opções devem ser recusadas nesses perfis? Proposta: registrar isso na revisão da seção
-  "Status do sistema: pré-produção" da constitution, não agora.
+Nenhuma. As duas que estavam pendentes foram resolvidas pela Leila em 2026-10-03: sem variável
+de ambiente (FR9) e opções recusadas em `staging` e `production` (FR8).
