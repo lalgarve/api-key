@@ -151,6 +151,33 @@ outro host ou porta (ex.: a 5432 já ocupada por outro projeto), use as variáve
 ambiente sandbox da Claude, que não tem Docker, os testes e o perfil `sandbox` usam o Postgres
 nativo do ambiente, com o mesmo endereço e as mesmas credenciais.
 
+### Testes caixa-preta da CLI (sob demanda)
+
+Uma segunda suíte, em Python com BDD, roda o jar empacotado como processo separado e confere só
+exit code, stdout e stderr. Ela não faz parte do `mvn verify` nem do CI obrigatório: roda quando
+pedida, localmente ou pelo workflow manual "Black-box CLI tests" no GitHub Actions.
+
+```
+mvn package -DskipTests
+blackbox-tests/run.sh
+```
+
+Ver [`blackbox-tests/README.md`](blackbox-tests/README.md) e
+[`specs/012-blackbox-cli-tests/`](specs/012-blackbox-cli-tests/).
+
+## Releases
+
+A versão vem do `pom.xml` raiz (e do `<parent>` de cada módulo). Para publicar uma release:
+
+1. Por PR, trocar a versão nos quatro `pom.xml` para a versão final (sem `-SNAPSHOT`) e levar
+   isso até o `main`.
+2. No GitHub Actions, rodar o workflow manual "Release" sobre o `main`. Ele recusa versão
+   `-SNAPSHOT` ou tag já existente, roda o mesmo `mvn verify` do CI contra Postgres real e só
+   então cria a tag `v<versão>` e a release no GitHub, com o jar da CLI
+   (`api-key-<versão>.jar`) anexado e as notas geradas a partir das PRs.
+
+Cada release publicada fica em [Releases](https://github.com/lalgarve/api-key/releases).
+
 ## Metodologia de desenvolvimento
 
 Este projeto usa Spec-Driven Development (SDD):

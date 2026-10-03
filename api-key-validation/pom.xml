@@ -7,7 +7,7 @@
   <parent>
     <groupId>dev.leilaalgarve.apikey</groupId>
     <artifactId>api-key-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>api-key-validation</artifactId>

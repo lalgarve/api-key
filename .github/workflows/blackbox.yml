@@ -1,0 +1,46 @@
+name: Black-box CLI tests
+
+# On demand only (specs/012-blackbox-cli-tests/spec.md, FR11): never on push or pull request,
+# and not a required check. Run it from the Actions tab, "Run workflow".
+on:
+  workflow_dispatch:
+    inputs:
+      include_pending:
+        description: 'Also run scenarios tagged @pending (specs not implemented yet)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  blackbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Start Postgres
+        run: docker compose up -d --wait db
+
+      # Only the jar matters here; the Java suite has its own check in ci.yml.
+      - name: Build the CLI jar
+        run: mvn -B package -DskipTests
+
+      - name: Run the black-box suite (docker profile)
+        env:
+          SPRING_PROFILES_ACTIVE: docker
+        run: blackbox-tests/run.sh ${{ inputs.include_pending && '--include-pending' || '' }}
+
+      - name: Stop Postgres
+        if: always()
+        run: docker compose down -v
