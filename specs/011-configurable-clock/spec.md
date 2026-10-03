@@ -106,7 +106,7 @@ Scenario: a simulated clock is always announced
 
 - FR1: Toda leitura de "agora" na CLI vem de um único `java.time.Clock`, em UTC, criado no
   início da execução. Nenhum comando nem política (`GenerateCommand`, `RevokeCommand`,
-  `ListCommand`, `OldKeyRotationPolicy`, e o `check` de `010-check-api-key-cli`) chama
+  `ListCommand`, `OldKeyRotationPolicy`, e o `validate` de `010-validate-api-key-cli`) chama
   `Instant.now()` direto. O mesmo `Clock` é o que o `ApiKeyValidator` de `008-validate-api-key`
   recebe quando roda dentro da CLI.
 - FR2: `--clock-start <data>` faz o relógio começar no instante informado e avançar em tempo
@@ -119,7 +119,7 @@ Scenario: a simulated clock is always announced
   com sinal: positivo vai para o futuro, negativo vai para o passado, zero equivale a não
   passar a opção.
 - FR4: As duas opções são globais: aceitas por qualquer comando (`generate`, `revoke`, `list`,
-  `check`), em qualquer posição depois da palavra do comando, e nunca obrigatórias.
+  `validate`), em qualquer posição depois da palavra do comando, e nunca obrigatórias.
 - FR5: Passar as duas opções na mesma execução é erro de uso (exit code 1), checado logo depois da checagem de ambiente de FR8, antes de
   qualquer outra validação do comando e antes de qualquer leitura ou escrita no banco.
 - FR6: Valor inválido em qualquer das duas opções é erro de uso (exit code 1), com as

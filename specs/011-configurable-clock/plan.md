@@ -9,7 +9,7 @@ A CLI (`api-key-cli`) é um processo de execução curta: o Spring Boot sobe o c
 Hoje quatro pontos leem o tempo com `Instant.now()` direto: `GenerateCommand` (linha do
 `createdAt`), `RevokeCommand`, `ListCommand` e `OldKeyRotationPolicy`. O `ApiKeyValidator` de
 `api-key-validation` já recebe um `java.time.Clock` (bean do consumidor via `ObjectProvider`,
-com `Clock.systemUTC()` como fallback), e o `check` de `010-check-api-key-cli` o usa dentro da
+com `Clock.systemUTC()` como fallback), e o `validate` de `010-validate-api-key-cli` o usa dentro da
 CLI.
 
 Os cenários Cucumber de `api-key-cli` chamam os comandos direto
@@ -23,7 +23,7 @@ Os perfis `staging` e `production` ainda não existem no projeto; os ativos hoje
 
 | Pergunta | Decisão | Status | Raciocínio |
 |---|---|---|---|
-| Como o relógio chega aos comandos? | Um bean `CliClock` (subclasse de `java.time.Clock`, em UTC) que delega para um `Clock` interno. Começa delegando para `Clock.systemUTC()`; o `ApiKeyCliRunner` troca o delegado depois de validar as opções e antes de chamar o comando. Comandos e `OldKeyRotationPolicy` recebem `Clock` no construtor | resolvida | Alternativas: (a) passar o `Clock` como parâmetro de `CliCommand.execute` muda a assinatura de todos os comandos e obriga o `check` da 010 a construir um `ApiKeyValidator` por chamada, já que hoje o validador recebe o `Clock` uma vez, como bean; (b) criar um `@Bean Clock` imutável a partir de `ApplicationArguments` no startup não deixa os testes (que compartilham um contexto Spring sem argumentos) exercitar as opções, e um valor inválido viraria falha de criação de bean em vez de exit code 1 com mensagem. O delegado mutável é aceitável porque a CLI executa um comando por processo; os testes restauram o relógio real depois de cada cenário |
+| Como o relógio chega aos comandos? | Um bean `CliClock` (subclasse de `java.time.Clock`, em UTC) que delega para um `Clock` interno. Começa delegando para `Clock.systemUTC()`; o `ApiKeyCliRunner` troca o delegado depois de validar as opções e antes de chamar o comando. Comandos e `OldKeyRotationPolicy` recebem `Clock` no construtor | resolvida | Alternativas: (a) passar o `Clock` como parâmetro de `CliCommand.execute` muda a assinatura de todos os comandos e obriga o `validate` da 010 a construir um `ApiKeyValidator` por chamada, já que hoje o validador recebe o `Clock` uma vez, como bean; (b) criar um `@Bean Clock` imutável a partir de `ApplicationArguments` no startup não deixa os testes (que compartilham um contexto Spring sem argumentos) exercitar as opções, e um valor inválido viraria falha de criação de bean em vez de exit code 1 com mensagem. O delegado mutável é aceitável porque a CLI executa um comando por processo; os testes restauram o relógio real depois de cada cenário |
 | Relógio deslocado ou congelado? | Deslocado: `Clock.offset(Clock.systemUTC(), delta)`. Para `--clock-start`, `delta = start - Clock.systemUTC().instant()`, calculado uma vez ao configurar; para `--clock-offset-days N`, `delta = Duration.ofDays(N)` | resolvida | Spec FR2/FR3: o relógio continua andando, então dois instantes lidos na mesma execução ficam em ordem (ex.: `created_at` e o `revoked_at` da rotação em `generate`) |
 | Onde as opções são lidas e validadas? | Uma classe `ClockOptions` (package `dev.leilaalgarve.apikey`) com `parse(String[] args)` que devolve um resultado tipado: nenhuma opção, relógio simulado (com o `delta`), ou erro com a mensagem exata do contrato. Usa `CliArgs.extractOption`, como os comandos | resolvida | Mantém a regra de parsing num lugar só, testável sem Spring. Os comandos ignoram flags que não conhecem (`CliArgs.extractOption` só procura a flag pedida), então não precisam saber das opções de relógio |
 | Ordem das checagens no runner | 1) perfil `staging`/`production` ativo e alguma opção de relógio presente → erro; 2) `ClockOptions.parse` com erro → erro; 3) relógio simulado → troca o delegado do `CliClock` e imprime o aviso em stderr; 4) chama o comando. Tudo antes do comando, portanto antes de qualquer acesso ao banco | resolvida | Spec FR5, FR6, FR8: a checagem de ambiente vem primeiro e vale até para `--clock-offset-days 0`; nenhum erro de relógio pode deixar escrita parcial |
@@ -42,7 +42,7 @@ Só `api-key-cli` muda. `api-key-core` e `api-key-validation` ficam como estão 
 | `dev.leilaalgarve.apikey.ClockOptions` | Nova. Parsing e validação de `--clock-start`/`--clock-offset-days`, mensagens de erro de `contracts/cli-options.md` |
 | `dev.leilaalgarve.apikey.ApiKeyCliRunner` | Recebe `CliClock` e `Environment`; ganha `dispatch(...)` com as checagens na ordem acima |
 | `GenerateCommand`, `RevokeCommand`, `ListCommand`, `OldKeyRotationPolicy` | Recebem `Clock` no construtor e trocam `Instant.now()` por `clock.instant()`, lido uma vez por execução |
-| `check` (`010-check-api-key-cli`) | Nenhuma mudança: o `ApiKeyValidator` recebe o `CliClock` como bean `Clock` pelo `ObjectProvider` |
+| `validate` (`010-validate-api-key-cli`) | Nenhuma mudança: o `ApiKeyValidator` recebe o `CliClock` como bean `Clock` pelo `ObjectProvider` |
 
 Como `CliClock` é o único bean `Clock` do contexto da CLI, o `ObjectProvider<Clock>` do
 `ApiKeyValidator` o encontra sem `@Primary`.

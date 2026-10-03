@@ -1,7 +1,7 @@
 # Contrato de CLI: configurable-clock
 
 Escrito antes da implementação — a implementação segue o contrato. Vale para todos os
-comandos (`generate`, `revoke`, `list`, `check`); o restante do contrato de cada comando não
+comandos (`generate`, `revoke`, `list`, `validate`); o restante do contrato de cada comando não
 muda.
 
 ## Opções globais de relógio
