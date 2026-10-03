@@ -86,13 +86,16 @@ class RevokeCommandTest {
 
     @Test
     void keyNotFound() {
+        // Long.MAX_VALUE, not a "big enough" literal like 999999: the suite runs against a Postgres
+        // that persists between runs, so the id sequence only grows and would eventually reach it.
+        String missingId = String.valueOf(Long.MAX_VALUE);
         ByteArrayOutputStream errBytes = new ByteArrayOutputStream();
 
         int exitCode = command.execute(
-                new String[] {"revoke", "--id", "999999"}, printStream(new ByteArrayOutputStream()), printStream(errBytes));
+                new String[] {"revoke", "--id", missingId}, printStream(new ByteArrayOutputStream()), printStream(errBytes));
 
         assertThat(exitCode).isEqualTo(2);
-        assertThat(out(errBytes)).isEqualTo("Error: no API key found with id 999999.\n");
+        assertThat(out(errBytes)).isEqualTo("Error: no API key found with id " + missingId + ".\n");
     }
 
     @Test
