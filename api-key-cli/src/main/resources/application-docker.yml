@@ -1,20 +1,9 @@
-# Real PostgreSQL in containers -- local via docker-compose, or CI -- to catch
-# incompatibilities the H2 sandbox profile would hide. The app owns the schema and runs
-# Flyway itself.
+# Real PostgreSQL in containers -- local via docker-compose, or CI. The app owns the schema and
+# runs Flyway itself.
 spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}
     username: ${SPRING_DATASOURCE_USERNAME:deployo_api_key_admin}
     password: ${SPRING_DATASOURCE_PASSWORD:deployo_api_key_admin}
-    # Explicit for the same reason as flyway.locations below: src/test/resources/application.yml
-    # hardcodes org.h2.Driver, and a profile file only overrides keys it redefines -- without
-    # this, running tests with SPRING_PROFILES_ACTIVE=docker tries to open a postgresql:// URL
-    # with the H2 driver and fails immediately.
-    driver-class-name: org.postgresql.Driver
   flyway:
     enabled: true
-    # Explicit, not inherited: src/test/resources/application.yml replaces (not layers on)
-    # src/main/resources/application.yml when tests run, and its own flyway.locations points
-    # at db/migration-h2 -- that value would otherwise leak into this profile when tests run
-    # with SPRING_PROFILES_ACTIVE=docker, since a profile file only overrides keys it redefines.
-    locations: classpath:db/migration

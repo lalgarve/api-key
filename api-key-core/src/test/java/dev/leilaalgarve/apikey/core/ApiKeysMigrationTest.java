@@ -15,12 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Proves the Flyway migration in data-model.md actually applies and enforces its invariants
- * -- run against the sandbox profile's H2 database (see src/test/resources/application.yml),
- * since this environment has no Docker/Postgres available. No ApiKey JPA entity exists yet
- * (that's T005); this only exercises the raw table via JdbcTemplate.
+ * -- run against real PostgreSQL (see src/test/resources/application.yml). No ApiKey JPA
+ * entity exists yet (that's T005); this only exercises the raw table via JdbcTemplate.
  *
  * Each test runs in its own transaction, rolled back afterwards -- no manual cleanup needed
- * between tests even though the H2 context (and its data) is reused across the class.
+ * between tests even though the Spring context (and its database) is reused across the class.
  */
 @SpringBootTest
 @Transactional

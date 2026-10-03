@@ -247,7 +247,7 @@ Exemplo usado neste projeto (`application-sandbox.yml`/`application-docker.yml`)
 
 | Nome | O que descreve |
 |---|---|
-| `sandbox` | Sem infraestrutura externa disponível (ex.: rodando isolado, sem Docker) — usa H2 embarcado no lugar do banco real |
+| `sandbox` | Ambiente sandbox da Claude: sem Docker, mas com PostgreSQL nativo provisionado pelo script de setup do próprio ambiente (fora do repositório). Mesmo banco real, sem substituto embarcado |
 | `docker` | Infraestrutura real via containers, local (`docker-compose`) ou CI — descartável |
 | `staging` | Pré-produção: infraestrutura e dados reais, mas isolados de produção |
 | `production` | Produção |
@@ -287,7 +287,11 @@ campo sob teste, mantendo os demais válidos.
 **Java** (stack deste projeto):
 
 - Piso de cobertura via JaCoCo (`mvn verify`), 80% de linha.
-- CI (`.github/workflows/ci.yml`) sobe PostgreSQL real via `docker-compose.yml` e roda a
-  suíte com `SPRING_PROFILES_ACTIVE=docker` — nunca contra o perfil `sandbox` (H2), reservado
-  para desenvolvimento local sem Docker (ver "Nomenclatura de ambientes").
+- A suíte roda sempre contra PostgreSQL real, nunca contra um banco embarcado em memória: o
+  `docker-compose.yml` localmente e no CI, ou o Postgres nativo no ambiente sandbox (ver
+  "Nomenclatura de ambientes"). Sem Postgres de pé, os testes falham com erro de conexão, de
+  propósito. CI (`.github/workflows/ci.yml`) sobe o serviço `db` e roda com
+  `SPRING_PROFILES_ACTIVE=docker`.
+- Como o banco local persiste entre execuções, todo teste que commita de verdade (fora de um
+  `@Transactional` com rollback) apaga o que criou, e nenhum teste assume a tabela vazia.
 - Cobertura comentada na PR a cada push via `madrapps/jacoco-report`.

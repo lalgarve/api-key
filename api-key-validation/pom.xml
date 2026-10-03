@@ -21,8 +21,8 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- Test-only: Flyway builds the real schema from api-key-core's migrations, on H2
-         locally or PostgreSQL in CI (SPRING_PROFILES_ACTIVE=docker). -->
+    <!-- Test-only: Flyway builds the real schema from api-key-core's migrations, against real
+         PostgreSQL. -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-flyway</artifactId>
@@ -41,11 +41,6 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

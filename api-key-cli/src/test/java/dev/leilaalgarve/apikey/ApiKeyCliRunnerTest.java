@@ -87,7 +87,7 @@ class ApiKeyCliRunnerTest {
         ListCommand listCommand = mock(ListCommand.class);
 
         new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit())
-                .run("--spring.datasource.url=jdbc:h2:mem:unused");
+                .run("--not-a-command");
 
         verifyNoInteractions(generateCommand);
         verifyNoInteractions(revokeCommand);

@@ -23,7 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
  * back too -- nothing is left half-done. Needs a real transaction (deliberately no
  * @Transactional on this test class -- GenerateCommand's own @Transactional is the real,
  * top-level boundary here, the same one production code gets) and a spy rather than a full
- * mock, so the existing key's revocation genuinely happens against H2 while only the new key's
+ * mock, so the existing key's revocation genuinely happens against Postgres while only the new key's
  * insert is made to fail.
  */
 @SpringBootTest(classes = DeployoApiKeyApplication.class, properties = "API_KEY_HMAC_PEPPER=test-pepper")
