@@ -47,6 +47,40 @@ O container foi removido no fim.
 - **T009** (sandbox) e **T011** (CI) ficam pendentes: T009 é manual, no ambiente sandbox, e T011
   depende da PR.
 
+### Registro da verificação no sandbox (T009, 2026-10-03, ambiente sandbox da Claude)
+
+Branch `development` em `6d3dbfc`. PostgreSQL 16 nativo, cluster `16/main` na porta 5432 (o
+cluster `16/email`, na 5433, também roda e não foi tocado).
+
+1. **Setup:** o script de setup do ambiente não fica versionado, então o bloco
+   `deployo_api_key` de `plan.md` foi rodado à parte (com o mesmo `psql_as_postgres` e o
+   `pg_ctlcluster 16 main start`), duas vezes seguidas. As duas terminaram sem erro (exit 0);
+   na segunda, role e banco já existiam e nenhum `CREATE` rodou.
+2. **Login:** `psql -U deployo_api_key_admin -d deployo_api_key` devolveu
+   `deployo_api_key_admin | deployo_api_key`. O dono do banco é `deployo_api_key_admin`.
+3. **jogo_acoes:** existe no mesmo cluster (dono `jogo_acoes_admin`) e conecta normalmente.
+   Ele estava sem tabelas no schema `public` neste ambiente novo, o que é o estado de um
+   ambiente recém-provisionado, não efeito do api-key.
+4. **1º `mvn clean verify`** (sem `SPRING_PROFILES_ACTIVE`, banco ainda sem tabelas):
+   `BUILD SUCCESS`. core 32, validation 42, cli 103 testes, 0 falhas, 0 erros, `Skipped: 0`,
+   "All coverage checks have been met" nos três módulos. O Flyway aplicou V1 e V2 nessa rodada.
+5. **2º `mvn clean verify`**, sem limpar o banco: `BUILD SUCCESS` com as mesmas contagens e
+   `Skipped: 0`. A tabela `api_keys` tinha 0 linhas antes e depois, ou seja, a suíte não
+   deixou resíduo.
+6. **CLI no perfil padrão**, com o jar do passo 5 e `API_KEY_HMAC_PEPPER=sandbox-pepper`: o log
+   mostra `No active profile set, falling back to 1 default profile: "sandbox"` e
+   `jdbc:postgresql://localhost:5432/deployo_api_key`. O Flyway disse
+   `Schema "public" is up to date` porque V1 e V2 já tinham sido aplicadas pela suíte do
+   passo 4 (`flyway_schema_history`: V1 e V2, `success = t`), por isso o `Successfully applied`
+   não aparece na CLI. `generate --client sandbox-check` imprimiu a chave (id 255); `list`
+   mostrou a chave como `active`; `revoke --id 255` respondeu
+   `API key 255 for client 'sandbox-check' has been revoked.`. Depois, `list` sem filtro não
+   mostra mais a chave (o padrão é `--status active`) e `list --status revoked` mostra a
+   chave 255 como `revoked`.
+7. **`./data/`:** não existe, nem antes nem depois dos passos 4 a 6.
+
+Nenhum passo falhou e nenhum erro de permissão do `deployo_api_key_admin` apareceu.
+
 ### T009 — roteiro da verificação no sandbox
 
 Feita pela pessoa responsável numa sessão (chat) da Claude rodando no ambiente sandbox, a
