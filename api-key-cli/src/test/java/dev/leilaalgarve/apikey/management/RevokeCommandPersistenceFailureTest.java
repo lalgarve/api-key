@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 /**
- * The one scenario that needs a stub: there's no real, reliable way to make an H2/Postgres
+ * The one scenario that needs a stub: there's no real, reliable way to make Postgres
  * save() fail on demand (memory/constitution.md, "Testes: preferir real a fake"). The looked-up
  * key is real; only the repository's save() is mocked to fail.
  */

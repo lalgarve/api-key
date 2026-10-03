@@ -2,7 +2,9 @@ package dev.leilaalgarve.apikey.cucumber;
 
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +18,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Two jobs: 1. maps a scenario's human-friendly key label ("id 3", "id 5" -- mirroring the
  * ids used in specs/*-/spec.md's prose Gherkin) to the real, auto-generated database id, since
- * the suite's H2 instance is shared across the whole run and ids keep climbing -- scenarios
+ * the suite's Postgres database is shared across runs and ids keep climbing -- scenarios
  * never get to assume a literal id. 2. appends a random suffix to every client name a
  * scenario touches, so two scenarios that both say "jogo-acoes" never see each other's rows --
  * same isolation purpose a real per-scenario transaction rollback would give, without needing
@@ -28,6 +30,7 @@ public class ScenarioState {
 
     private String suffix;
     private Map<String, Long> idsByLabel;
+    private Set<String> qualifiedClients;
 
     public ByteArrayOutputStream outBytes;
     public ByteArrayOutputStream errBytes;
@@ -43,6 +46,7 @@ public class ScenarioState {
     public void reset() {
         suffix = UUID.randomUUID().toString().substring(0, 8);
         idsByLabel = new HashMap<>();
+        qualifiedClients = new HashSet<>();
         outBytes = new ByteArrayOutputStream();
         errBytes = new ByteArrayOutputStream();
         exitCode = 0;
@@ -51,7 +55,14 @@ public class ScenarioState {
     }
 
     public String qualifyClient(String client) {
-        return client + "-" + suffix;
+        String qualified = client + "-" + suffix;
+        qualifiedClients.add(qualified);
+        return qualified;
+    }
+
+    /** Every client name this scenario qualified -- what CucumberHooks deletes afterwards. */
+    public Set<String> qualifiedClients() {
+        return qualifiedClients;
     }
 
     public void rememberId(String label, Long realId) {

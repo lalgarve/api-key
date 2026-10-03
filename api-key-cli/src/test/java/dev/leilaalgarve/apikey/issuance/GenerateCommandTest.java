@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Exercises GenerateCommand end to end against the real generator, hasher (real pepper via
- * property override below) and repository/H2 database -- everything except the persistence
+ * property override below) and repository/Postgres database -- everything except the persistence
  * failure scenario, which needs a mocked repository (GenerateCommandPersistenceFailureTest)
  * since there's no real way to force the database to fail here.
  */
@@ -49,9 +49,8 @@ class GenerateCommandTest {
         assertThat(out).contains("API key generated for client 'jogo-acoes' (expires in 90 days).");
         assertThat(out).containsPattern("dak_[A-Za-z0-9_-]+");
 
-        List<ApiKey> saved = repository.findAll();
+        List<ApiKey> saved = repository.findByClientName("jogo-acoes");
         assertThat(saved).hasSize(1);
-        assertThat(saved.get(0).getClientName()).isEqualTo("jogo-acoes");
         assertThat(saved.get(0).getExpiresAt()).isNotNull();
         // the plaintext key is never persisted -- only its hash, and it isn't the printed key
         assertThat(out).doesNotContain(saved.get(0).getKeyHash());
@@ -67,7 +66,7 @@ class GenerateCommandTest {
         assertThat(exitCode).isEqualTo(0);
         assertThat(out(outBytes)).contains("API key generated for client 'jogo-acoes' (does not expire).");
 
-        List<ApiKey> saved = repository.findAll();
+        List<ApiKey> saved = repository.findByClientName("jogo-acoes");
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getExpiresAt()).isNull();
     }

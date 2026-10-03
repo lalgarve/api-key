@@ -16,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
  * <p>The repository is a spy (not a plain bean) so CommandDispatchSteps can simulate a
  * persistence failure for exactly one scenario ("the database rejects..."), same reasoning as
  * GenerateCommandRotationAtomicityTest -- a spy wraps the real repository, so every other
- * scenario's calls still hit the real H2 database. CucumberHooks resets the spy's stubbing
+ * scenario's calls still hit the real Postgres database. CucumberHooks resets the spy's stubbing
  * after every scenario so it never leaks into the next one.
  */
 @CucumberContextConfiguration

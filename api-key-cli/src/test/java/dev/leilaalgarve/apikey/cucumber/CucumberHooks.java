@@ -26,9 +26,17 @@ public class CucumberHooks {
      * interaction history, not a spy's fundamental "delegate to the real object" behavior, so
      * this restores normal pass-through persistence for the next scenario without needing a
      * fresh Spring context per scenario.
+     *
+     * Then deletes every key the scenario created (by the suffixed client names ScenarioState
+     * handed out): scenarios commit for real, and the suite runs against a Postgres that
+     * persists between runs, so leftovers would otherwise accumulate and leak into later
+     * tests. Reset first, so a scenario's stubbing can never block its own cleanup.
      */
     @After
-    public void resetRepositorySpy() {
+    public void resetRepositorySpyAndDeleteScenarioKeys() {
         Mockito.reset(repository);
+        for (String client : state.qualifiedClients()) {
+            repository.deleteAll(repository.findByClientName(client));
+        }
     }
 }

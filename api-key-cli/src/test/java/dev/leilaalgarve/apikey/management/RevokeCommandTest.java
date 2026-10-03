@@ -16,7 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Exercises RevokeCommand end to end against the real repository/H2 database -- everything
+ * Exercises RevokeCommand end to end against the real repository/Postgres database -- everything
  * except the persistence failure scenario, which needs a mocked repository
  * (RevokeCommandPersistenceFailureTest) since there's no real way to force the database to
  * fail here (same reasoning as GenerateCommandPersistenceFailureTest).
