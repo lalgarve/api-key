@@ -487,3 +487,31 @@ Ficam pendentes T009 (verificação manual no sandbox) e T011 (CI da PR).
 - `5d2395a` test: use an id the sequence can never reach in RevokeCommandTest (009)
 
 **Issues:** #27 aberta (épico da spec 009).
+
+### Spec 012: testes caixa-preta da CLI
+
+**Resumo:** Spec `012-blackbox-cli-tests`: uma suíte de aceite em Python (BDD com `behave`) que
+roda o jar empacotado como processo separado e confere só exit code, stdout e stderr. Por decisão
+da Leila, ela é um passo próprio, rodado só quando solicitado (localmente ou pelo workflow manual
+"Black-box CLI tests"), fora do `mvn verify`. Os cenários de `generate`, `revoke` e `list` rodam
+hoje; os de `validate` (010) e das opções de relógio (011) já estão escritos com a tag `@pending`.
+
+Rodar o jar de verdade mostrou o que os testes dentro da JVM escondiam: o banner e os logs do
+Spring saem em stdout, a JVM avisa sobre `JAVA_TOOL_OPTIONS` em stderr no sandbox, sem locale o
+`—` vira `?`, e a chave impressa é base64url (43 caracteres), não os 64 hexadecimais do exemplo
+no contrato de `001`. A suíte contorna os três primeiros montando o ambiente do processo; o
+banner em stdout continua afetando quem usa a CLI em script (sugestão de spec própria em
+`plan.md`).
+
+Validado no sandbox: `mvn clean verify` verde duas vezes (32 + 42 + 103 testes) e a suíte verde
+duas vezes seguidas no mesmo banco (41 cenários, 23 pendentes, cerca de 8 minutos cada). Com o
+banco fora do ar, a suíte aborta antes do primeiro cenário mostrando a saída da CLI.
+
+**Commits (continuação):**
+- `a6ace91` docs: add spec for black-box CLI tests in Python with BDD (012)
+- `adb6628` docs: run black-box CLI suite as a separate on-demand step (012)
+- `3d8ad23` docs: add plan and tasks for black-box CLI tests (012)
+- `3710b3b` test: add black-box BDD suite that runs the packaged CLI jar (012)
+- `5c55488` chore: add on-demand workflow and docs for the black-box suite (012)
+
+**Issues:** nenhuma aberta para a 012 ainda.
