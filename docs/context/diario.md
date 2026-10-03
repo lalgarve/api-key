@@ -515,3 +515,19 @@ banco fora do ar, a suíte aborta antes do primeiro cenário mostrando a saída 
 - `5c55488` chore: add on-demand workflow and docs for the black-box suite (012)
 
 **Issues:** nenhuma aberta para a 012 ainda.
+
+### Release 1.0.0
+
+**Resumo:** Preparação da primeira release, a 1.0.0. O projeto não tinha processo de release
+(nenhuma tag, nenhuma release no GitHub). A versão dos quatro `pom.xml` passou de
+`0.0.1-SNAPSHOT` para `1.0.0`, e um workflow manual "Release" cria a tag `v<versão>` e a
+release no GitHub com o jar da CLI, depois de rodar o mesmo `mvn verify` do CI. A 1.0.0 sai com
+`generate`, `revoke`, `list` e a biblioteca `api-key-validation`; o comando `validate` (010) e
+as opções de relógio (011) ficam para uma versão seguinte.
+
+Validado no sandbox: `mvn clean verify` verde com a versão 1.0.0 (32 + 42 + 103 testes),
+gerando `api-key-cli/target/api-key-1.0.0.jar`.
+
+**Commits:**
+- `ec25db1` chore: set version to 1.0.0 for the first release
+- `70b091a` chore: add on-demand release workflow
