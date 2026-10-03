@@ -135,6 +135,22 @@ mesmos valores já definidos em `docker-compose.yml` para o serviço `db`:
 Para encerrar, `docker compose down` (ou `docker compose stop adminer` para só parar o
 Adminer, mantendo o banco no ar).
 
+## Rodando os testes
+
+A suíte roda contra PostgreSQL real, nunca contra um banco em memória (ver
+`specs/009-remove-h2-real-postgres`). Suba o banco antes:
+
+```
+docker compose up -d --wait db
+mvn verify
+```
+
+Sem o Postgres de pé, os testes falham com erro de conexão, de propósito. Para apontar para
+outro host ou porta (ex.: a 5432 já ocupada por outro projeto), use as variáveis
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` e `SPRING_DATASOURCE_PASSWORD`. No
+ambiente sandbox da Claude, que não tem Docker, os testes e o perfil `sandbox` usam o Postgres
+nativo do ambiente, com o mesmo endereço e as mesmas credenciais.
+
 ## Metodologia de desenvolvimento
 
 Este projeto usa Spec-Driven Development (SDD):

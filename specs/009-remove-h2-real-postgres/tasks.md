@@ -5,18 +5,47 @@ Quebra `plan.md` em tarefas pequenas, ordenadas, prontas para virar Issues (ver
 
 | ID | Descrição | Depende de | Paralelizável | Issue |
 |---|---|---|---|---|
-| T001 | `src/test/resources/application.yml` de `api-key-core`, `api-key-validation` e `api-key-cli`: trocar o `datasource` de H2 pelos valores de Postgres de `application-docker.yml` (`${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}`, `deployo_api_key_admin`, `org.postgresql.Driver`) + `flyway.locations: classpath:db/migration` | — | [P] | #<n> |
-| T002 | Remover `src/test/resources/application-docker.yml` de `api-key-core` e `api-key-validation` (idênticos ao `application.yml` de teste depois do T001). Em `api-key-cli/src/main/resources/application-docker.yml`, tirar `driver-class-name`/`flyway.locations` explícitos e os comentários sobre H2 | T001 | | #<n> |
-| T003 | `DeployoApiKeyApplicationTests`: tirar as sobrescritas `jdbc:h2`/`org.h2.Driver` e apagar no fim a chave que o teste gerou (pelo `client_name`). `ApiKeyCliRunnerTest.unknownCommandWordDoesNothing`: trocar `jdbc:h2:mem:unused` por um argumento neutro | T001 | [P] | #<n> |
-| T004 | `api-key-cli/src/main/resources/application-sandbox.yml`: trocar H2 pelos mesmos valores de `application-docker.yml` (`jdbc:postgresql://localhost:5432/deployo_api_key`, `deployo_api_key_admin`, `org.postgresql.Driver`, `db/migration`). Reescrever o comentário do topo: Postgres nativo do ambiente sandbox, provisionado pelo script de setup do ambiente (ver `plan.md`, "Contexto técnico"), e não mais "No Docker/Postgres available here" | — | [P] | #<n> |
-| T005 | Remover `api-key-core/src/main/resources/db/migration-h2/` | T001, T004 | | #<n> |
-| T006 | Remover `com.h2database:h2` dos três `pom.xml` (+ o comentário "on H2" em `api-key-validation/pom.xml`) | T001, T003, T004 | | #<n> |
-| T007 | Atualizar comentários de teste que dizem "H2" (`GenerateCommandTest`, `RevokeCommandTest`, `GenerateCommandRotationAtomicityTest`, `*PersistenceFailureTest`, `ApiKeysMigrationTest`, `ScenarioState`, `CucumberSpringConfiguration`) | T001 | [P] | #<n> |
-| T008 | `docker compose up -d --wait db` + `mvn clean verify` **duas vezes seguidas**, sem `docker compose down -v` entre as rodadas, sem `SPRING_PROFILES_ACTIVE`. Confirmar as duas verdes (prova de que nenhum teste depende de banco vazio). Adicionar limpeza em qualquer teste que falhar só na segunda | T001, T002, T003, T006 | | #<n> |
-| T009 | **Verificação no ambiente sandbox (manual, numa sessão da Claude rodando no sandbox).** Ver o roteiro abaixo da tabela | T004, T005, T006, T008 | | #<n> |
-| T010 | Com `db` **parado**: `mvn test` falha com erro de conexão claro (não `BUILD SUCCESS`, não H2) | T006 | [P] | #<n> |
-| T011 | Confirmar CI verde na PR (`ci.yml` sem mudança esperada; ver `plan.md`, linha do `SPRING_PROFILES_ACTIVE`) | T008 | | #<n> |
-| T012 | Documentação: `memory/constitution.md` ("Nomenclatura de ambientes": `sandbox` não é mais "H2 embarcado"; "CI e cobertura de testes": tirar "perfil `sandbox` (H2)"), README (rodar testes exige `docker compose up -d --wait db`), `docs/context/diario.md` | T004 | [P] | #<n> |
+| T001 | `src/test/resources/application.yml` de `api-key-core`, `api-key-validation` e `api-key-cli`: trocar o `datasource` de H2 pelos valores de Postgres de `application-docker.yml` (`${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}`, `deployo_api_key_admin`, `org.postgresql.Driver`) + `flyway.locations: classpath:db/migration` | — | [P] | #27 |
+| T002 | Remover `src/test/resources/application-docker.yml` de `api-key-core` e `api-key-validation` (idênticos ao `application.yml` de teste depois do T001). Em `api-key-cli/src/main/resources/application-docker.yml`, tirar `driver-class-name`/`flyway.locations` explícitos e os comentários sobre H2 | T001 | | #27 |
+| T003 | `DeployoApiKeyApplicationTests`: tirar as sobrescritas `jdbc:h2`/`org.h2.Driver` e apagar no fim a chave que o teste gerou (pelo `client_name`). `ApiKeyCliRunnerTest.unknownCommandWordDoesNothing`: trocar `jdbc:h2:mem:unused` por um argumento neutro | T001 | [P] | #27 |
+| T004 | `api-key-cli/src/main/resources/application-sandbox.yml`: trocar H2 pelos mesmos valores de `application-docker.yml` (`jdbc:postgresql://localhost:5432/deployo_api_key`, `deployo_api_key_admin`, `org.postgresql.Driver`, `db/migration`). Reescrever o comentário do topo: Postgres nativo do ambiente sandbox, provisionado pelo script de setup do ambiente (ver `plan.md`, "Contexto técnico"), e não mais "No Docker/Postgres available here" | — | [P] | #27 |
+| T005 | Remover `api-key-core/src/main/resources/db/migration-h2/` | T001, T004 | | #27 |
+| T006 | Remover `com.h2database:h2` dos três `pom.xml` (+ o comentário "on H2" em `api-key-validation/pom.xml`) | T001, T003, T004 | | #27 |
+| T007 | Atualizar comentários de teste que dizem "H2" (`GenerateCommandTest`, `RevokeCommandTest`, `GenerateCommandRotationAtomicityTest`, `*PersistenceFailureTest`, `ApiKeysMigrationTest`, `ScenarioState`, `CucumberSpringConfiguration`) | T001 | [P] | #27 |
+| T008 | `docker compose up -d --wait db` + `mvn clean verify` **duas vezes seguidas**, sem `docker compose down -v` entre as rodadas, sem `SPRING_PROFILES_ACTIVE`. Confirmar as duas verdes (prova de que nenhum teste depende de banco vazio). Adicionar limpeza em qualquer teste que falhar só na segunda | T001, T002, T003, T006 | | #27 |
+| T009 | **Verificação no ambiente sandbox (manual, numa sessão da Claude rodando no sandbox).** Ver o roteiro abaixo da tabela | T004, T005, T006, T008 | | #27 |
+| T010 | Com `db` **parado**: `mvn test` falha com erro de conexão claro (não `BUILD SUCCESS`, não H2) | T006 | [P] | #27 |
+| T011 | Confirmar CI verde na PR (`ci.yml` sem mudança esperada; ver `plan.md`, linha do `SPRING_PROFILES_ACTIVE`) | T008 | | #27 |
+| T012 | Documentação: `memory/constitution.md` ("Nomenclatura de ambientes": `sandbox` não é mais "H2 embarcado"; "CI e cobertura de testes": tirar "perfil `sandbox` (H2)"), README (rodar testes exige `docker compose up -d --wait db`), `docs/context/diario.md` | T004 | [P] | #27 |
+
+### Registro da verificação local (2026-10-03, Windows 11)
+
+A porta 5432 dessa máquina estava ocupada pelo Postgres do `jogo-acoes` (`jogo-acoes-db-1`).
+Por isso a verificação usou um `postgres:16` temporário na 55432, com as credenciais do
+`docker-compose.yml` e `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:55432/deployo_api_key`.
+O container foi removido no fim.
+
+- **T008, primeira tentativa:** a 1ª rodada passou e a 2ª falhou em 2 testes de
+  `GenerateCommandTest`, que esperavam `findAll()` com exatamente 1 linha (assumiam tabela
+  vazia). A tabela tinha 84 linhas deixadas pelos cenários Cucumber da CLI, que commitam e nunca
+  apagavam nada; no H2 em memória isso sumia junto com o processo. Correções: `CucumberHooks`
+  passa a apagar, depois de cada cenário, as chaves dos clientes que o cenário usou
+  (`ScenarioState.qualifiedClients()`), e `GenerateCommandTest` passa a consultar por
+  `findByClientName`.
+- **T008, depois das correções:** duas rodadas seguidas de `mvn clean verify`, sem limpar as 84
+  linhas antigas (prova de que a suíte tolera um banco sujo). As duas deram `BUILD SUCCESS`:
+  core 32, validation 42 e cli 103 testes, 0 falhas, 0 pulados. A contagem de linhas ficou em 84
+  antes e depois, ou seja, a suíte não deixa mais resíduo.
+- **Auditoria inspirada na issue 41 do `jogo-acoes`** (o mesmo tipo de asserção que só vale
+  em banco vazio ou zerado): o resto da suíte já filtra por um `client_name` exclusivo do teste
+  ou roda com rollback. Sobrou só `RevokeCommandTest.keyNotFound`, que supunha que o id `999999`
+  nunca existe; num Postgres persistente a sequência só cresce. Ele passa a usar
+  `Long.MAX_VALUE`. O cenário Gherkin com `"999999"` ficou igual: o `Given` dele confere a
+  pré-condição e falharia alto em vez de passar pelo motivo errado.
+- **T010:** com o container parado, `mvn test` dá `BUILD FAILURE` já em `api-key-core`
+  (13 erros), com `Connection to localhost:55432 refused`. Não houve fallback nem skip.
+- **T009** (sandbox) e **T011** (CI) ficam pendentes: T009 é manual, no ambiente sandbox, e T011
+  depende da PR.
 
 ### T009 — roteiro da verificação no sandbox
 

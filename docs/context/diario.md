@@ -457,3 +457,33 @@ Gherkin correspondente.
 
 **Issues:** #23. Mensagens de commit anteriores a `77eab36` citam totais de testes menores, de
 um script de contagem que errava; os números certos (do próprio Maven) são os acima.
+
+## 2026-10-03
+
+**Resumo:** Spec `009-remove-h2-real-postgres`, adaptada da `05-028` do `jogo-acoes`: o H2 sai
+do projeto. Os testes dos três módulos e o perfil `sandbox` passam a usar PostgreSQL real (o
+`docker-compose.yml` localmente e no CI; no ambiente sandbox da Claude, o Postgres nativo, cujo
+script de setup passa a criar também o `deployo_api_key` no cluster `16/main`). Sem Postgres de
+pé, os testes falham com erro de conexão, de propósito. Também saíram `db/migration-h2` e a
+dependência do H2.
+
+Rodar a suíte duas vezes seguidas no mesmo banco (T008) revelou o que o H2 em memória
+escondia: os cenários Cucumber da CLI commitavam chaves e nunca apagavam, e o
+`GenerateCommandTest` supunha a tabela vazia. Os cenários agora apagam o que criam, e o teste
+consulta pelo próprio cliente. Uma auditoria no espírito da issue 41 do `jogo-acoes` achou mais
+um caso latente (`RevokeCommandTest` supondo que o id `999999` nunca existe).
+
+Validado no Windows 11 contra um `postgres:16` temporário na 55432 (a 5432 estava com o banco do
+`jogo-acoes`): duas rodadas de `mvn clean verify` num banco já sujo, as duas verdes (32 + 42 +
+103 testes), sem deixar resíduo; com o banco parado, `BUILD FAILURE` por conexão recusada.
+Ficam pendentes T009 (verificação manual no sandbox) e T011 (CI da PR).
+
+**Commits:**
+- `85f5372` test: add draft spec for dropping H2 in favor of real Postgres (009)
+- `573335e` decision: point the sandbox profile at the sandbox's native Postgres (009)
+- `f4fcdbd` test: fix the CLI jar name in the sandbox check script (009)
+- `7fa7673` test: run every module's tests against real Postgres instead of H2 (009)
+- `93d3eb4` chore: point the sandbox profile at Postgres and remove H2 (009)
+- `5d2395a` test: use an id the sequence can never reach in RevokeCommandTest (009)
+
+**Issues:** #27 aberta (épico da spec 009).
