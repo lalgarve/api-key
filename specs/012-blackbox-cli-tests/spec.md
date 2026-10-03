@@ -1,6 +1,6 @@
 # Spec: blackbox-cli-tests
 
-**Status:** rascunho
+**Status:** aprovada — não implementada
 **Issue:** #<a criar>
 
 ## Resumo
@@ -160,8 +160,8 @@ Feature: environment (black box)
 
 - Nenhuma mudança no código Java, no schema ou nos contratos de CLI: a suíte só consome o que
   já existe.
-- Python 3.12 ou mais novo; dependências instaladas num ambiente virtual próprio da pasta, sem
-  nada instalado globalmente.
+- Python 3.11 ou mais novo (a versão do ambiente sandbox); dependências instaladas num
+  ambiente virtual próprio da pasta, sem nada instalado globalmente.
 - A suíte inteira roda em poucos minutos: cada processo da CLI sobe um contexto Spring, então
   os cenários preparam estado com o menor número de comandos possível.
 - Nenhum segredo real: o pepper usado nos testes é um valor fixo de teste, definido pela
