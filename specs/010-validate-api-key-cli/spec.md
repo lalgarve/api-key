@@ -1,11 +1,11 @@
-# Spec: check-api-key-cli
+# Spec: validate-api-key-cli
 
-**Status:** rascunho
+**Status:** aprovada — não implementada
 **Issue:** #<a criar>
 
 ## Resumo
 
-Um comando de CLI, `check`, recebe uma API-KEY em texto puro e diz se ela é válida agora —
+Um comando de CLI, `validate`, recebe uma API-KEY em texto puro e diz se ela é válida agora —
 e, se for, de qual cliente ela é; se não for, o motivo exato. Usa a mesma regra de validação
 que o serviço protegido usa (`ApiKeyValidator`, `008-validate-api-key`), sem reimplementá-la.
 
@@ -24,68 +24,68 @@ divergir em silêncio.
 
 ## Cenários (comportamento esperado)
 
-Executáveis em `features/check-api-key.feature` (`api-key-cli`, roda com `mvn verify` — ver
+Executáveis em `features/validate-api-key-cli.feature` (`api-key-cli`, roda com `mvn verify` — ver
 `specs/006-executable-gherkin-scenarios`). Escritos antes do código; em inglês, como as demais
 features:
 
 ```gherkin
-Feature: Check an API key from the command line
+Feature: Validate an API key from the command line
 
-  Scenario: check a currently active key
+  Scenario: validate a currently active key
     Given client "jogo-acoes" has an active key
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 0
     And stdout is "API key is valid for client 'jogo-acoes'."
 
-  Scenario: check an active key that never expires
+  Scenario: validate an active key that never expires
     Given client "jogo-acoes" has an active key that never expires
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 0
 
-  Scenario: check a key whose revocation is scheduled but not reached yet
+  Scenario: validate a key whose revocation is scheduled but not reached yet
     Given client "jogo-acoes" has a key scheduled to be revoked in 14 days
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 0
 
-  Scenario: check with no key on stdin
-    When the operator runs "check" with empty stdin
+  Scenario: validate with no key on stdin
+    When the operator runs "validate" with empty stdin
     Then the exit code is 1
     And stderr is "Error: no API key provided on stdin."
 
-  Scenario: check a key with the wrong format
-    When the operator runs "check" with "not-a-key" on stdin
+  Scenario: validate a key with the wrong format
+    When the operator runs "validate" with "not-a-key" on stdin
     Then the exit code is 2
     And stderr is "Invalid: the key is malformed."
 
-  Scenario: check a key that was never issued
-    When the operator runs "check" with a well-formed key that was never issued on stdin
+  Scenario: validate a key that was never issued
+    When the operator runs "validate" with a well-formed key that was never issued on stdin
     Then the exit code is 3
     And stderr is "Invalid: no API key matches."
 
-  Scenario: check a revoked key
+  Scenario: validate a revoked key
     Given client "jogo-acoes" has a revoked key
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 4
     And stderr is "Invalid: the key was revoked."
 
-  Scenario: check an expired key
+  Scenario: validate an expired key
     Given client "jogo-acoes" has an expired key
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 5
     And stderr is "Invalid: the key expired."
 
-  Scenario: check a key that is both expired and revoked
+  Scenario: validate a key that is both expired and revoked
     Given client "jogo-acoes" has a key that is both expired and revoked
-    When the operator runs "check" with that key on stdin
+    When the operator runs "validate" with that key on stdin
     Then the exit code is 4
 ```
 
 ## Requisitos funcionais
 
-- FR1: Novo comando `check`, contrato em [`contracts/cli-commands.md`](contracts/cli-commands.md).
+- FR1: Novo comando `validate`, contrato em [`contracts/cli-commands.md`](contracts/cli-commands.md).
 - FR2: A chave é lida da **entrada padrão** (primeira linha, sem espaços nas pontas), nunca de
   um argumento de linha de comando. Argumento fica no histórico do shell e aparece em `ps` para
-  qualquer usuário da máquina; stdin não. Uso típico: `deployo-api-key check < chave.txt`, ou
+  qualquer usuário da máquina; stdin não. Uso típico: `deployo-api-key validate < chave.txt`, ou
   colar a chave quando o comando espera a entrada.
 - FR3: A decisão de validade vem de `ApiKeyValidator.validate` (`api-key-validation`).
   `api-key-cli` passa a depender de `api-key-validation`; nenhuma regra de validação é reescrita
@@ -100,7 +100,7 @@ Feature: Check an API key from the command line
   mesmo princípio de `001-generate-api-key` e `008-validate-api-key` FR6.
 - FR7: O comando é só leitura — não altera nenhuma linha do banco.
 - FR8: "Agora" é o instante do `Clock` que a aplicação injeta no `ApiKeyValidator`. Se a spec
-  de clock configurável (`011`) for implementada, `check` passa a respeitar o clock
+  de clock configurável (`011`) for implementada, `validate` passa a respeitar o clock
   configurado sem mudança neste comando.
 
 ## Requisitos não-funcionais
@@ -108,7 +108,7 @@ Feature: Check an API key from the command line
 - Nenhuma mudança de schema, nenhuma migration nova.
 - Os comandos existentes (`generate`, `revoke`, `list`) não mudam de comportamento.
 - Exit codes estáveis, para o comando poder ser usado em script
-  (`if deployo-api-key check < chave.txt; then ...`).
+  (`if deployo-api-key validate < chave.txt; then ...`).
 
 ## Fora de escopo
 
@@ -121,7 +121,9 @@ Feature: Check an API key from the command line
 
 ## Decisões em aberto
 
-- Nome do comando: `check` (proposta) ou `validate`, alinhado ao nome da biblioteca de
-  `008-validate-api-key`.
-- Chave inválida sai em stderr (proposta, igual aos erros dos outros comandos) ou em stdout,
-  já que "inválida" é um resultado esperado do comando e não um erro de execução?
+Nenhuma — as duas que estavam pendentes foram resolvidas:
+
+- Nome do comando: `validate`, alinhado ao nome da biblioteca de `008-validate-api-key`
+  (em vez de `check`).
+- Chave inválida sai em stderr, igual aos erros dos outros comandos; stdout fica só para a
+  chave válida. O exit code continua sendo o que diferencia cada motivo.

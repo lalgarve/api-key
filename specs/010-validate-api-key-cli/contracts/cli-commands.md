@@ -1,12 +1,12 @@
-# Contrato de CLI: check-api-key-cli
+# Contrato de CLI: validate-api-key-cli
 
 Escrito antes da implementação — a implementação segue o contrato.
 
-## Comando: `check`
+## Comando: `validate`
 
 **Uso:**
 ```
-deployo-api-key check < arquivo-com-a-chave
+deployo-api-key validate < arquivo-com-a-chave
 ```
 
 **Argumentos:** nenhum. A chave é lida da entrada padrão — só a primeira linha, sem espaços
