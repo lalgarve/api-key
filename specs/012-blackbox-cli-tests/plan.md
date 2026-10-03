@@ -78,6 +78,8 @@ blackbox-tests/
   blackbox/
     cli.py                  # localiza o jar, monta env, roda o processo, CliResult
     list_table.py           # parse da tabela de list
+    scenario.py             # estado do cenário: sufixo, chaves capturadas, ids, placeholders
+  tests/                    # pytest do pacote blackbox/, sem jar nem banco
 ```
 
 `blackbox/` é um pacote Python comum importado pelos passos, testável sem `behave`.
@@ -94,9 +96,12 @@ blackbox-tests/
   com 1, igual a um erro de uso. Para não confundir os dois, `before_all` roda um
   `list --client <sufixo>` de sanidade e aborta a suíte inteira, com stdout e stderr, se ele não
   sair com 0.
-- **Tempo de execução.** Cada comando sobe o Spring (alguns segundos). Os passos de preparo usam
-  o mínimo de comandos (uma chave por `generate`, uma leitura de `list` só quando o `id` é
-  necessário). Rodar em paralelo está fora de escopo (spec).
+- **Tempo de execução.** Cada comando sobe o Spring (cerca de 5 segundos no sandbox). Os passos
+  de preparo usam o mínimo de comandos (uma chave por `generate`, uma leitura de `list` só
+  quando o `id` é necessário). Medido em 2026-10-03 no sandbox: 41 cenários (os não pendentes)
+  em cerca de 8 minutos. `-XX:TieredStopAtLevel=1` e `-XX:+UseSerialGC` não mudaram o tempo de
+  uma execução, então não foram adotados. Rodar em paralelo está fora de escopo (spec); como a
+  suíte roda só sob demanda, o tempo não pesa em nenhuma PR.
 - **Linhas acumulando no banco.** A suíte não apaga nada (a CLI não tem comando para isso). Com
   cliente único por cenário, isso não afeta resultados; o banco local pode ser recriado com
   `docker compose down -v`.
