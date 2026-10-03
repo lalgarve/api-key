@@ -36,7 +36,7 @@ forma de provar o perfil `sandbox` e a suíte contra o Postgres nativo.
 5. Repetir `mvn clean verify` uma segunda vez, sem limpar o banco. Esperado: verde de novo
    (mesma prova de repetibilidade do T008, agora no Postgres nativo).
 6. Rodar a CLI no perfil padrão (`sandbox`) a partir do jar gerado pelo passo 4/5, ex.:
-   `API_KEY_HMAC_PEPPER=sandbox-pepper java -jar api-key-cli/target/api-key-cli-*.jar generate --client sandbox-check`.
+   `API_KEY_HMAC_PEPPER=sandbox-pepper java -jar api-key-cli/target/api-key-*.jar generate --client sandbox-check`.
    Esperado: o Flyway aplica V1 e V2 de `db/migration` (log `Successfully applied` na primeira
    vez, `Schema ... is up to date` nas seguintes), e a chave é impressa. Depois, `list` mostra a
    chave e `revoke --id <id>` a revoga.
