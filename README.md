@@ -151,6 +151,20 @@ outro host ou porta (ex.: a 5432 já ocupada por outro projeto), use as variáve
 ambiente sandbox da Claude, que não tem Docker, os testes e o perfil `sandbox` usam o Postgres
 nativo do ambiente, com o mesmo endereço e as mesmas credenciais.
 
+### Testes caixa-preta da CLI (sob demanda)
+
+Uma segunda suíte, em Python com BDD, roda o jar empacotado como processo separado e confere só
+exit code, stdout e stderr. Ela não faz parte do `mvn verify` nem do CI obrigatório: roda quando
+pedida, localmente ou pelo workflow manual "Black-box CLI tests" no GitHub Actions.
+
+```
+mvn package -DskipTests
+blackbox-tests/run.sh
+```
+
+Ver [`blackbox-tests/README.md`](blackbox-tests/README.md) e
+[`specs/012-blackbox-cli-tests/`](specs/012-blackbox-cli-tests/).
+
 ## Metodologia de desenvolvimento
 
 Este projeto usa Spec-Driven Development (SDD):
