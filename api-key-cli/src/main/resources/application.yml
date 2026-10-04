@@ -6,6 +6,18 @@ spring:
     web-application-type: none
   profiles:
     default: sandbox
+  flyway:
+    # Project-specific folder (not Flyway's default db/migration), so a service that embeds
+    # api-key-core and runs its own Flyway doesn't pick these scripts up as its own.
+    locations: classpath:db/migration-api-key
+    # Own history table too, so the service's Flyway (default flyway_schema_history) and this
+    # one can share a database without mixing their V1, V2...
+    table: api_key_schema_history
+    # Sharing the schema with the service means it is never empty when this Flyway first runs,
+    # and Flyway refuses a non-empty schema without its own history table. Baseline at 0 so V1
+    # and V2 still apply on top.
+    baseline-on-migrate: true
+    baseline-version: 0
   jpa:
     open-in-view: false
     hibernate:

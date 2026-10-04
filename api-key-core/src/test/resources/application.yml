@@ -13,4 +13,7 @@ spring:
       ddl-auto: validate
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration-api-key
+    table: api_key_schema_history
+    baseline-on-migrate: true
+    baseline-version: 0

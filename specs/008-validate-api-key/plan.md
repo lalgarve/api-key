@@ -85,3 +85,6 @@ Novas classes em `dev.leilaalgarve.apikey.validation`:
   e dependa de `api-key-core` passaria a enxergar `db/migration` deste projeto também.
   Aceito por ora (o consumidor previsto roda no mesmo banco, cujas migrations são estas);
   revisar se aparecer um consumidor com schema próprio.
+  **Atualização (1.0.1):** apareceu um consumidor com migrations próprias em `db/migration` e
+  houve colisão; os scripts foram para `db/migration-api-key`, que só a CLI (e os testes)
+  apontam em `spring.flyway.locations`.
