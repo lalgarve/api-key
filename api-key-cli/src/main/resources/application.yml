@@ -6,6 +6,10 @@ spring:
     web-application-type: none
   profiles:
     default: sandbox
+  flyway:
+    # Project-specific folder (not Flyway's default db/migration), so a service that embeds
+    # api-key-core and runs its own Flyway doesn't pick these scripts up as its own.
+    locations: classpath:db/migration-api-key
   jpa:
     open-in-view: false
     hibernate:

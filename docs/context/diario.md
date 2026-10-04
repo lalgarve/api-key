@@ -531,3 +531,16 @@ gerando `api-key-cli/target/api-key-1.0.0.jar`.
 **Commits:**
 - `ec25db1` chore: set version to 1.0.0 for the first release
 - `70b091a` chore: add on-demand release workflow
+
+### Release 1.0.1 (correção)
+
+**Resumo:** As migrations Flyway saíram de `db/migration`, o caminho padrão do Flyway, para
+`db/migration-api-key`. Um serviço que embute `api-key-core` e roda o próprio Flyway em
+`db/migration` passava a enxergar os scripts deste projeto como se fossem dele, e houve colisão.
+Só a CLI e os testes apontam para a pasta nova (`spring.flyway.locations`). Os nomes dos
+arquivos e o conteúdo não mudaram, então um banco criado pela 1.0.0 continua válido. A versão
+dos quatro `pom.xml` passou para `1.0.1`.
+
+Validado no sandbox: `mvn clean verify` verde (32 + 42 + 103 testes). Upgrade: banco zerado,
+`list` com o jar da 1.0.0 (aplica V1 e V2), depois `list` com o jar da 1.0.1 no mesmo banco
+("Successfully validated 2 migrations", "Schema is up to date", saída 0).
