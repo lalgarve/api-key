@@ -13,7 +13,7 @@
 
   <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>api-key-parent</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <packaging>pom</packaging>
   <name>api-key-parent</name>
   <description>Biblioteca e aplicacao Java para criar API-KEY pela linha de comando</description>
