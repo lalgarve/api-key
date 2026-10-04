@@ -13,7 +13,7 @@
 
   <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>api-key-parent</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <packaging>pom</packaging>
   <name>api-key-parent</name>
   <description>Biblioteca e aplicacao Java para criar API-KEY pela linha de comando</description>
@@ -25,6 +25,17 @@
     <module>api-key-validation</module>
     <module>api-key-cli</module>
   </modules>
+
+  <!-- Where the Release workflow publishes the libraries (api-key-core, api-key-validation and
+       this parent POM, which they reference). The CLI fat jar is skipped: it ships as a release
+       asset instead. -->
+  <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/lalgarve/api-key</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <java.version>21</java.version>
