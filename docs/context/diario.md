@@ -541,6 +541,20 @@ Só a CLI e os testes apontam para a pasta nova (`spring.flyway.locations`). Os 
 arquivos e o conteúdo não mudaram, então um banco criado pela 1.0.0 continua válido. A versão
 dos quatro `pom.xml` passou para `1.0.1`.
 
+O histórico do Flyway da CLI também saiu da tabela padrão: agora é `api_key_schema_history`,
+com baseline na versão 0 quando o schema já tem tabelas de outro serviço. Um banco da 1.0.0
+precisa renomear `flyway_schema_history` uma vez (comando no README). A Leila confirmou que
+isso não é problema, porque o primeiro serviço consumidor ainda está só na especificação.
+
+A release 1.0.0 publicou só o jar da CLI, e o serviço não tinha de onde baixar a biblioteca. O
+workflow "Release" agora publica `api-key-core` e `api-key-validation` (e o POM pai) no GitHub
+Packages e anexa os jars das duas à release. A CLI fica fora do deploy (`maven.deploy.skip`),
+porque é um fat jar executável.
+
 Validado no sandbox: `mvn clean verify` verde (32 + 42 + 103 testes). Upgrade: banco zerado,
 `list` com o jar da 1.0.0 (aplica V1 e V2), depois `list` com o jar da 1.0.1 no mesmo banco
-("Successfully validated 2 migrations", "Schema is up to date", saída 0).
+("Successfully validated 2 migrations", "Schema is up to date", saída 0), antes da troca da
+tabela de histórico. Banco compartilhado: schema com uma tabela de outro serviço e um
+`flyway_schema_history` alheio, `generate` com o jar da 1.0.1 fez baseline 0 e aplicou V1 e V2
+em `api_key_schema_history`. Deploy simulado num repositório local: saem `api-key-parent`,
+`api-key-core` e `api-key-validation`; a CLI é pulada.

@@ -173,8 +173,49 @@ A versão vem do `pom.xml` raiz (e do `<parent>` de cada módulo). Para publicar
    isso até o `main`.
 2. No GitHub Actions, rodar o workflow manual "Release" sobre o `main`. Ele recusa versão
    `-SNAPSHOT` ou tag já existente, roda o mesmo `mvn verify` do CI contra Postgres real e só
-   então cria a tag `v<versão>` e a release no GitHub, com o jar da CLI
-   (`api-key-<versão>.jar`) anexado e as notas geradas a partir das PRs.
+   então publica `api-key-core` e `api-key-validation` no GitHub Packages e cria a tag
+   `v<versão>` e a release no GitHub, com o jar da CLI (`api-key-<versão>.jar`) e os jars das
+   duas bibliotecas anexados, mais as notas geradas a partir das PRs.
+
+### Usar a biblioteca num serviço
+
+O serviço protegido declara o repositório do GitHub Packages e a dependência:
+
+```xml
+<repositories>
+  <repository>
+    <id>github-api-key</id>
+    <url>https://maven.pkg.github.com/lalgarve/api-key</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>dev.leilaalgarve.apikey</groupId>
+  <artifactId>api-key-validation</artifactId>
+  <version>1.0.1</version>
+</dependency>
+```
+
+O GitHub Packages exige autenticação até para ler: no `~/.m2/settings.xml` (ou no CI do
+serviço), um `<server>` com o mesmo `id` (`github-api-key`), o usuário do GitHub e um token
+com `read:packages`.
+
+O serviço sobe pela própria classe Spring Boot e só valida chaves. Gerar, revogar e listar
+continua sendo o jar da CLI, rodado à parte contra o mesmo banco.
+
+### Migrations e banco compartilhado
+
+Os scripts ficam em `db/migration-api-key` e o histórico do Flyway da CLI na tabela
+`api_key_schema_history`, para não colidir com um serviço que use o Flyway no mesmo banco
+(`db/migration` e `flyway_schema_history` são os padrões dele). A CLI faz baseline na versão 0
+quando o schema já tem tabelas do serviço, e aplica V1 e V2 por cima.
+
+Um banco criado pela 1.0.0 tem o histórico em `flyway_schema_history`. Antes de rodar a 1.0.1
+nele, renomear a tabela uma vez:
+
+```sql
+ALTER TABLE flyway_schema_history RENAME TO api_key_schema_history;
+```
 
 Cada release publicada fica em [Releases](https://github.com/lalgarve/api-key/releases).
 
