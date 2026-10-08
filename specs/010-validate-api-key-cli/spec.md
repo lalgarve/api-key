@@ -1,7 +1,7 @@
 # Spec: validate-api-key-cli
 
 **Status:** aprovada — não implementada
-**Issue:** #<a criar>
+**Issue:** #39
 
 ## Resumo
 
