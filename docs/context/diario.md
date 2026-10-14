@@ -650,3 +650,17 @@ gravação, coberto pelo teste JUnit.
 - `39b3ac5` fix: roll back the new key when flushing it fails (013) (#14)
 
 **Issues:** #14 — todas as tarefas concluídas; falta a preparação da release 1.1.0.
+
+### Release 1.1.0
+
+**Resumo:** Preparação da 1.1.0, com o `validate` (010) e as permissões por chave (013). A
+versão dos quatro `pom.xml` passou para `1.1.0`, e o README ganhou a seção "Atualizando para a
+1.1.0" com os três cuidados do upgrade (CLI antes do serviço, desconstrução de record, mesma
+`api-key.permissions` nos dois lados), que as notas geradas pelo workflow não trazem.
+
+Validado no sandbox: `mvn clean verify` verde (56 + 47 + 155 testes), gerando
+`api-key-1.1.0.jar` e os jars 1.1.0 das bibliotecas. Upgrade num banco só com V1 e V2 (como um
+da 1.0.x): o `list` do jar 1.1.0 aplicou a V3 e mostrou a chave antiga com a permissão padrão.
+
+**Commits:**
+- `7df00d6` chore: set version to 1.1.0 for the release
