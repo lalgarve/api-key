@@ -17,6 +17,7 @@ import java.util.TreeSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.NoTransactionException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
@@ -144,12 +145,11 @@ public class GenerateCommand implements CliCommand {
             // this catch and the key is never shown (013 spec.md FR8).
             repository.flush();
         } catch (DataAccessException e) {
-            if (rotationResult.updatedCount() > 0) {
-                // The old keys above were already revoked in this same transaction -- roll
-                // that back too (FR6/FR7 of 003-auto-revoke-on-rotation): the whole operation
-                // is a unit.
-                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            }
+            // Roll back everything this attempt already wrote: the old keys' revocation (FR6/FR7
+            // of 003-auto-revoke-on-rotation) and, when only the flush failed, the new key's own
+            // row, inserted at save -- otherwise it would be committed without ever being printed
+            // (013 spec.md FR8).
+            rollbackIfInTransaction();
             CliOutput.println(err, "Error: could not save the generated key. No key was printed.");
             return 3;
         }
@@ -180,5 +180,14 @@ public class GenerateCommand implements CliCommand {
         }
 
         return 0;
+    }
+
+    /** No-op when called directly on the bean, outside the @Transactional proxy (unit tests). */
+    private static void rollbackIfInTransaction() {
+        try {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+        } catch (NoTransactionException e) {
+            // Nothing to roll back.
+        }
     }
 }
