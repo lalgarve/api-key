@@ -603,7 +603,8 @@ pulados). A segunda tentativa do modo normal esbarrou num efeito colateral meu: 
 
 ### Spec 013: permissões por chave
 
-**Resumo:** Rascunho da spec `013-key-permissions` (issue #14), para a versão 1.2.0. `generate`
+**Resumo:** Spec `013-key-permissions` (issue #14), que entra na versão 1.1.0 junto com a
+`010`. `generate`
 ganha `--permissions`; as permissões vêm de um catálogo configurado por instância, com uma ou
 mais marcadas como padrão. Sem `--permissions`, a chave recebe as padrão. Com a opção, recebe
 só as listadas. A biblioteca de validação passa a devolver as permissões da chave. Sem
@@ -611,8 +612,16 @@ catálogo, tudo funciona como na 1.1.0, por isso é uma versão menor. As duas d
 foram resolvidas pela Leila: chaves emitidas antes da 1.2.0 recebem as permissões padrão na
 validação, e a opção é uma lista separada por vírgula.
 
+Depois do merge da `010` na `main`, a Leila decidiu juntar as duas na 1.1.0, e as referências de
+versão da spec foram ajustadas. `plan.md` e `tasks.md` foram escritos: permissões numa tabela
+nova mapeada como `@ElementCollection` (busca em `SUBSELECT`, sem uma consulta por chave em
+`list`), catálogo lido por um `PermissionCatalog` em `api-key-core`, e catálogo inválido tratado
+como o pepper ausente (o contexto sobe; a CLI sai com 2 antes de despachar). Spec marcada como
+aprovada.
+
 **Commits:**
 - `0e8457c` docs: add draft spec for per-key permissions (013) (#14)
 - `43c70b3` decision: resolve the open decisions of spec 013 (#14)
+- `aa8aa06` docs: add plan and tasks for key permissions (013) (#14)
 
-**Issues:** #14 em andamento (spec em rascunho).
+**Issues:** #14 em andamento (spec aprovada, não implementada).
