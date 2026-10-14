@@ -10,10 +10,13 @@ import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.issuance.OldKeyRotationPolicy;
 import dev.leilaalgarve.apikey.management.ListCommand;
 import dev.leilaalgarve.apikey.management.RevokeCommand;
+import dev.leilaalgarve.apikey.management.ValidateCommand;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,6 +46,9 @@ public class CommandDispatchSteps {
     private ListCommand listCommand;
 
     @Autowired
+    private ValidateCommand validateCommand;
+
+    @Autowired
     private ApiKeyRepository repository;
 
     @Autowired
@@ -63,6 +69,31 @@ public class CommandDispatchSteps {
 
     @When("the operator runs {string}")
     public void theOperatorRuns(String commandLine) {
+        dispatch(commandLine, InputStream.nullInputStream());
+    }
+
+    @When("the operator runs {string} with that key on stdin")
+    public void theOperatorRunsWithThatKeyOnStdin(String commandLine) {
+        assertThat(state.lastIssuedRawKey).as("no key was issued yet this scenario").isNotNull();
+        dispatch(commandLine, stdinOf(state.lastIssuedRawKey));
+    }
+
+    @When("the operator runs {string} with empty stdin")
+    public void theOperatorRunsWithEmptyStdin(String commandLine) {
+        dispatch(commandLine, stdinOf(""));
+    }
+
+    @When("the operator runs {string} with {string} on stdin")
+    public void theOperatorRunsWithLiteralOnStdin(String commandLine, String stdinContent) {
+        dispatch(commandLine, stdinOf(stdinContent));
+    }
+
+    @When("the operator runs {string} with a well-formed key that was never issued on stdin")
+    public void theOperatorRunsWithANeverIssuedKeyOnStdin(String commandLine) {
+        dispatch(commandLine, stdinOf(apiKeyGenerator.generate()));
+    }
+
+    private void dispatch(String commandLine, InputStream in) {
         List<String> tokens = substitute(tokenize(commandLine));
         PrintStream out = new PrintStream(state.outBytes, true, StandardCharsets.UTF_8);
         PrintStream err = new PrintStream(state.errBytes, true, StandardCharsets.UTF_8);
@@ -71,9 +102,14 @@ public class CommandDispatchSteps {
             case "generate" -> state.hmacPepperMissing ? generateCommandWithMissingPepper() : generateCommand;
             case "revoke" -> revokeCommand;
             case "list" -> listCommand;
+            case "validate" -> validateCommand;
             default -> throw new IllegalArgumentException("Unknown command word: " + tokens.get(0));
         };
-        state.exitCode = command.execute(tokens.toArray(new String[0]), out, err);
+        state.exitCode = command.execute(tokens.toArray(new String[0]), in, out, err);
+    }
+
+    private static InputStream stdinOf(String content) {
+        return new ByteArrayInputStream((content == null ? "" : content).getBytes(StandardCharsets.UTF_8));
     }
 
     private GenerateCommand generateCommandWithMissingPepper() {
@@ -93,6 +129,11 @@ public class CommandDispatchSteps {
     @Then("stdout says the key was generated for client {string}")
     public void stdoutSaysTheKeyWasGeneratedForClient(String client) {
         assertThat(out()).contains("API key generated for client '" + state.qualifyClient(client) + "'");
+    }
+
+    @Then("stdout says the key is valid for client {string}")
+    public void stdoutSaysTheKeyIsValidForClient(String client) {
+        assertThat(out()).isEqualTo("API key is valid for client '" + state.qualifyClient(client) + "'.\n");
     }
 
     @Then("stdout is empty")

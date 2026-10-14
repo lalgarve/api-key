@@ -561,6 +561,48 @@ em `api_key_schema_history`. Deploy simulado num repositório local: saem `api-k
 
 ## 2026-10-14
 
+**Resumo:** Spec `010-validate-api-key-cli` implementada: novo comando `validate` lê a API-KEY
+da entrada padrão e delega inteiramente pro `ApiKeyValidator` (`008-validate-api-key`) — nenhuma
+regra de validação reescrita na CLI. `spec.md` já não tinha decisão de produto em aberto, mas
+`plan.md`/`tasks.md` ainda não existiam; escrevê-los revelou duas decisões técnicas reais que a
+spec não endereçava: como `validate` lê stdin sem mudar a assinatura de `CliCommand.execute`
+usada por `generate`/`revoke`/`list` (e ~40 call sites de teste), e em que package o novo
+comando entra sem colidir com `dev.leilaalgarve.apikey.validation`, já do módulo
+`api-key-validation`.
+
+Resolvidas as duas: `CliCommand` ganhou um método `default` de 4 argumentos
+(`execute(args, in, out, err)`), que só `ValidateCommand` sobrescreve — os outros três comandos
+e seus testes ficaram intocados; `ApiKeyCliRunner.run()` passou a chamar sempre essa versão,
+com `System.in` de verdade. `ValidateCommand` entrou em `dev.leilaalgarve.apikey.management`,
+junto de `revoke`/`list`. `api-key-cli` ganhou a dependência em `api-key-validation`.
+
+Testes: `ValidateCommandTest` cobre cada linha do contrato contra o gerador/hasher/repositório
+reais, com `Clock.fixed`; 9 cenários novos em `validate-api-key-cli.feature`, com
+`ScenarioState`/`CommandDispatchSteps` estendidos pra alimentar stdin por cenário e uma nova
+`ValidationLifecycleSteps` — diferente de `KeyLifecycleSteps`, que só referencia chaves por
+`id`/label com um hash falso, `validate` recebe a chave em texto puro, então essas precondições
+emitem um par texto-puro/hash de verdade. A seção "Cenários" de `spec.md` passou a apontar pro
+`.feature` em vez de duplicar o Gherkin inline, mesma convenção de `001`-`004` desde a `006`.
+
+Em `blackbox-tests/features/validate.feature` (já escrito por `012`, com toda a feature
+marcada `@pending`), a tag desceu pra só os dois cenários que dependem de `--clock-start`
+(`011-configurable-clock`, ainda não implementada) — os outros sete passam de verdade contra o
+jar empacotado.
+
+Validado: `mvn clean verify` nos três módulos (196 testes, 0 falhas). Suíte black-box duas
+vezes — com `--include-pending` (as 14 falhas batem exatamente com os cenários já marcados
+`@pending`, nada além disso) e no modo normal (5 features, 48 cenários, 0 falhas, 16 pendentes
+pulados). A segunda tentativa do modo normal esbarrou num efeito colateral meu: rodar
+`mvn clean verify` ao mesmo tempo que a suíte black-box apagou o jar que ela procurava
+(`mvn clean` limpa `target/` de todos os módulos) — não repetir as duas em paralelo.
+
+**Commits:**
+- `9b6f470` feat: add the validate CLI command (T001-T007)
+
+**Issues:** #39 — todas as tarefas concluídas.
+
+### Spec 013: permissões por chave
+
 **Resumo:** Rascunho da spec `013-key-permissions` (issue #14), para a versão 1.2.0. `generate`
 ganha `--permissions`; as permissões vêm de um catálogo configurado por instância, com uma ou
 mais marcadas como padrão. Sem `--permissions`, a chave recebe as padrão. Com a opção, recebe

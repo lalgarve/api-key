@@ -26,6 +26,11 @@
       <artifactId>api-key-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>dev.leilaalgarve.apikey</groupId>
+      <artifactId>api-key-validation</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>

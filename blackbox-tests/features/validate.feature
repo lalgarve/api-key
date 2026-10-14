@@ -1,6 +1,4 @@
 # Contract: specs/010-validate-api-key-cli/contracts/cli-commands.md.
-# Pending until 010 is implemented: the PR that implements it removes the tag.
-@pending
 Feature: validate command (black box)
 
   Scenario: validate a key generated a moment ago
@@ -39,12 +37,14 @@ Feature: validate command (black box)
     And stderr is "Invalid: the key was revoked."
     And neither stdout nor stderr contains the key labeled "k1"
 
+  @pending
   Scenario: validate an expired key
     Given client "acme" has a key labeled "k1" that already expired 10 days ago
     When I run "validate" with the key labeled "k1" on stdin
     Then the exit code is 5
     And stderr is "Invalid: the key expired."
 
+  @pending
   Scenario: validate a key that is both expired and revoked
     Given client "acme" has a key labeled "k1" that is both expired and revoked
     When I run "validate" with the key labeled "k1" on stdin

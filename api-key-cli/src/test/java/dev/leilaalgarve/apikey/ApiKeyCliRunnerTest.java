@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.management.ListCommand;
 import dev.leilaalgarve.apikey.management.RevokeCommand;
+import dev.leilaalgarve.apikey.management.ValidateCommand;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -21,13 +22,15 @@ class ApiKeyCliRunnerTest {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
         RevokeCommand revokeCommand = mock(RevokeCommand.class);
         ListCommand listCommand = mock(ListCommand.class);
-        when(generateCommand.execute(any(), any(), any())).thenReturn(0);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
+        when(generateCommand.execute(any(), any(), any(), any())).thenReturn(0);
 
-        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit())
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit())
                 .run("generate", "--client", "jogo-acoes");
 
         verifyNoInteractions(revokeCommand);
         verifyNoInteractions(listCommand);
+        verifyNoInteractions(validateCommand);
     }
 
     @Test
@@ -35,12 +38,15 @@ class ApiKeyCliRunnerTest {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
         RevokeCommand revokeCommand = mock(RevokeCommand.class);
         ListCommand listCommand = mock(ListCommand.class);
-        when(revokeCommand.execute(any(), any(), any())).thenReturn(0);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
+        when(revokeCommand.execute(any(), any(), any(), any())).thenReturn(0);
 
-        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit()).run("revoke", "--id", "3");
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit())
+                .run("revoke", "--id", "3");
 
         verifyNoInteractions(generateCommand);
         verifyNoInteractions(listCommand);
+        verifyNoInteractions(validateCommand);
     }
 
     @Test
@@ -48,21 +54,39 @@ class ApiKeyCliRunnerTest {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
         RevokeCommand revokeCommand = mock(RevokeCommand.class);
         ListCommand listCommand = mock(ListCommand.class);
-        when(listCommand.execute(any(), any(), any())).thenReturn(0);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
+        when(listCommand.execute(any(), any(), any(), any())).thenReturn(0);
 
-        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit()).run("list");
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit()).run("list");
 
         verifyNoInteractions(generateCommand);
         verifyNoInteractions(revokeCommand);
+        verifyNoInteractions(validateCommand);
+    }
+
+    @Test
+    void dispatchesToValidateCommand() {
+        GenerateCommand generateCommand = mock(GenerateCommand.class);
+        RevokeCommand revokeCommand = mock(RevokeCommand.class);
+        ListCommand listCommand = mock(ListCommand.class);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
+        when(validateCommand.execute(any(), any(), any(), any())).thenReturn(0);
+
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit()).run("validate");
+
+        verifyNoInteractions(generateCommand);
+        verifyNoInteractions(revokeCommand);
+        verifyNoInteractions(listCommand);
     }
 
     @Test
     void exitsWithTheCommandsExitCodeWhenNonZero() {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
-        when(generateCommand.execute(any(), any(), any())).thenReturn(1);
+        when(generateCommand.execute(any(), any(), any(), any())).thenReturn(1);
         List<Integer> exitCalls = new ArrayList<>();
 
-        new ApiKeyCliRunner(generateCommand, mock(RevokeCommand.class), mock(ListCommand.class), exitCalls::add)
+        new ApiKeyCliRunner(generateCommand, mock(RevokeCommand.class), mock(ListCommand.class),
+                mock(ValidateCommand.class), exitCalls::add)
                 .run("generate");
 
         assertThat(exitCalls).containsExactly(1);
@@ -71,10 +95,11 @@ class ApiKeyCliRunnerTest {
     @Test
     void doesNotExitWhenTheCommandSucceeds() {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
-        when(generateCommand.execute(any(), any(), any())).thenReturn(0);
+        when(generateCommand.execute(any(), any(), any(), any())).thenReturn(0);
         List<Integer> exitCalls = new ArrayList<>();
 
-        new ApiKeyCliRunner(generateCommand, mock(RevokeCommand.class), mock(ListCommand.class), exitCalls::add)
+        new ApiKeyCliRunner(generateCommand, mock(RevokeCommand.class), mock(ListCommand.class),
+                mock(ValidateCommand.class), exitCalls::add)
                 .run("generate");
 
         assertThat(exitCalls).isEmpty();
@@ -85,13 +110,15 @@ class ApiKeyCliRunnerTest {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
         RevokeCommand revokeCommand = mock(RevokeCommand.class);
         ListCommand listCommand = mock(ListCommand.class);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
 
-        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit())
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit())
                 .run("--not-a-command");
 
         verifyNoInteractions(generateCommand);
         verifyNoInteractions(revokeCommand);
         verifyNoInteractions(listCommand);
+        verifyNoInteractions(validateCommand);
     }
 
     @Test
@@ -99,12 +126,14 @@ class ApiKeyCliRunnerTest {
         GenerateCommand generateCommand = mock(GenerateCommand.class);
         RevokeCommand revokeCommand = mock(RevokeCommand.class);
         ListCommand listCommand = mock(ListCommand.class);
+        ValidateCommand validateCommand = mock(ValidateCommand.class);
 
-        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, failOnExit()).run();
+        new ApiKeyCliRunner(generateCommand, revokeCommand, listCommand, validateCommand, failOnExit()).run();
 
         verifyNoInteractions(generateCommand);
         verifyNoInteractions(revokeCommand);
         verifyNoInteractions(listCommand);
+        verifyNoInteractions(validateCommand);
     }
 
     private static ProcessExiter failOnExit() {

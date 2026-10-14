@@ -3,6 +3,7 @@ package dev.leilaalgarve.apikey;
 import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.management.ListCommand;
 import dev.leilaalgarve.apikey.management.RevokeCommand;
+import dev.leilaalgarve.apikey.management.ValidateCommand;
 import java.util.Map;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -22,11 +23,12 @@ public class ApiKeyCliRunner implements CommandLineRunner {
     private final ProcessExiter exiter;
 
     public ApiKeyCliRunner(GenerateCommand generateCommand, RevokeCommand revokeCommand, ListCommand listCommand,
-            ProcessExiter exiter) {
+            ValidateCommand validateCommand, ProcessExiter exiter) {
         this.commands = Map.of(
                 "generate", generateCommand,
                 "revoke", revokeCommand,
-                "list", listCommand);
+                "list", listCommand,
+                "validate", validateCommand);
         this.exiter = exiter;
     }
 
@@ -39,7 +41,7 @@ public class ApiKeyCliRunner implements CommandLineRunner {
         if (command == null) {
             return;
         }
-        int exitCode = command.execute(args, System.out, System.err);
+        int exitCode = command.execute(args, System.in, System.out, System.err);
         if (exitCode != 0) {
             exiter.exit(exitCode);
         }
