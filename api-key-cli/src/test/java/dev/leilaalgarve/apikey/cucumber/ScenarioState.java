@@ -38,6 +38,8 @@ public class ScenarioState {
     public boolean hmacPepperMissing;
     /** The last client name a "When" step referenced, in its original (un-suffixed) form. */
     public String lastClient;
+    /** The plaintext of the last key a "Given" step issued -- what "that key" refers to in validate-api-key-cli.feature. */
+    public String lastIssuedRawKey;
 
     public ScenarioState() {
         reset();
@@ -52,6 +54,7 @@ public class ScenarioState {
         exitCode = 0;
         hmacPepperMissing = false;
         lastClient = null;
+        lastIssuedRawKey = null;
     }
 
     public String qualifyClient(String client) {
