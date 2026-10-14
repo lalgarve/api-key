@@ -7,7 +7,7 @@
   <parent>
     <groupId>dev.leilaalgarve.apikey</groupId>
     <artifactId>api-key-parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
   </parent>
 
   <artifactId>api-key-cli</artifactId>
