@@ -43,6 +43,7 @@ comandos se comportam como antes desta spec.
 | Nome fora do formato | `Error: invalid permission name '<nome>' in api-key.permissions.` | 2 |
 | Nome repetido | `Error: permission '<nome>' is declared more than once in api-key.permissions.` | 2 |
 | Nenhuma permissão padrão | `Error: api-key.permissions must mark at least one permission as default.` | 2 |
+| Lista que não dá para ler (ex.: `default` diferente de `true`/`false`) | `Error: api-key.permissions is not a valid list of {name, default} entries.` | 2 |
 
 O exit 2 é o mesmo do pepper ausente em `001`: erro de configuração da instância, não de uso.
 

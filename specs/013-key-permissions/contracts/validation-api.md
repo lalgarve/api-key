@@ -128,7 +128,8 @@ public final class PermissionCatalog {
 public class InvalidPermissionCatalogException extends RuntimeException { ... }
 ```
 
-Um catálogo inválido (nome fora do formato, nome repetido, nenhuma permissão padrão) **não**
+Um catálogo inválido (nome fora do formato, nome repetido, nenhuma permissão padrão, lista
+que não dá para ler) **não**
 impede o contexto do Spring de subir. O problema fica guardado, e os métodos acima lançam
 `InvalidPermissionCatalogException` com a mensagem do contrato de CLI. A CLI chama
 `requireValid()` antes de despachar qualquer comando e traduz a exceção para o exit 2. É o

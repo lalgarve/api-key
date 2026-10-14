@@ -1,6 +1,6 @@
 # Spec: key-permissions
 
-**Status:** aprovada — não implementada
+**Status:** aprovada — implementada (T001-T011 concluídas)
 **Issue:** #14
 **Versão alvo:** 1.1.0 (versão menor, compatível com 1.0.x), junto com `010-validate-api-key-cli`
 
@@ -49,10 +49,10 @@ A compatibilidade vem da regra do padrão:
 
 ## Cenários (comportamento esperado)
 
-Executáveis num `features/key-permissions.feature` novo em `api-key-cli` (ver
-`specs/006-executable-gherkin-scenarios`) e na suíte caixa-preta de
-`012-blackbox-cli-tests`. Escritos antes do código, em inglês. O catálogo dos cenários é o do
-serviço de e-mail:
+Executáveis em `api-key-cli/src/test/resources/features/key-permissions.feature` (roda com
+`mvn verify` — ver `specs/006-executable-gherkin-scenarios`) e, contra o jar empacotado, em
+`blackbox-tests/features/permissions.feature` (`012-blackbox-cli-tests`). Escritos antes do
+código, em inglês. O catálogo dos cenários é o do serviço de e-mail:
 
 | Permissão | Padrão | Para quê |
 |---|---|---|
@@ -62,101 +62,12 @@ serviço de e-mail:
 Os nomes são um exemplo. Quem escolhe os nomes é o serviço de e-mail, ao configurar a própria
 instância.
 
-```gherkin
-Feature: Per-key permissions
-
-  Rule: instance with a permission catalog
-
-    Background:
-      Given the permission catalog is:
-        | permission             | default |
-        | email:send             | yes     |
-        | disposable-email:admin | no      |
-
-    Scenario: generate without --permissions grants the default permissions
-      When the operator runs "generate --client jogo-acoes"
-      Then the exit code is 0
-      And the last line of stdout is "Permissions: email:send."
-      And the new key has exactly the permissions "email:send"
-
-    Scenario: generate with --permissions grants only the listed permissions
-      When the operator runs "generate --client email-admin --permissions disposable-email:admin"
-      Then the exit code is 0
-      And the last line of stdout is "Permissions: disposable-email:admin."
-      And the new key has exactly the permissions "disposable-email:admin"
-
-    Scenario: generate with several permissions
-      When the operator runs "generate --client email-admin --permissions email:send,disposable-email:admin"
-      Then the exit code is 0
-      And the new key has exactly the permissions "disposable-email:admin, email:send"
-
-    Scenario: a repeated permission is granted once
-      When the operator runs "generate --client jogo-acoes --permissions email:send,email:send"
-      Then the exit code is 0
-      And the new key has exactly the permissions "email:send"
-
-    Scenario: generate with a permission that is not in the catalog
-      When the operator runs "generate --client jogo-acoes --permissions email:delete"
-      Then the exit code is 1
-      And stderr is "Error: unknown permission 'email:delete'. Known permissions: disposable-email:admin, email:send."
-      And no key is saved
-
-    Scenario: generate with an empty --permissions
-      When the operator runs "generate --client jogo-acoes --permissions ,"
-      Then the exit code is 1
-      And stderr is "Error: --permissions must list at least one permission."
-      And no key is saved
-
-    Scenario: validate shows the permissions of a valid key
-      Given client "email-admin" has an active key with the permissions "disposable-email:admin"
-      When the operator runs "validate" with that key on stdin
-      Then the exit code is 0
-      And stdout is:
-        """
-        API key is valid for client 'email-admin'.
-        Permissions: disposable-email:admin.
-        """
-
-    Scenario: list shows a permissions column
-      Given client "jogo-acoes" has an active key with the permissions "email:send"
-      When the operator runs "list"
-      Then the exit code is 0
-      And the last column of the header is "PERMISSIONS"
-      And the row of that key ends with "email:send"
-
-    Scenario: a key issued before 1.1.0 gets the default permissions
-      Given client "jogo-acoes" has an active key issued before 1.1.0
-      When the protected service validates that key
-      Then the result is valid with the permissions "email:send"
-
-  Rule: instance without a permission catalog (behaviour before this feature)
-
-    Background:
-      Given no permission catalog is configured
-
-    Scenario: generate behaves exactly as in 1.0.x
-      When the operator runs "generate --client jogo-acoes"
-      Then the exit code is 0
-      And stdout is the same as in 1.0.x, with no "Permissions:" line
-
-    Scenario: --permissions is rejected
-      When the operator runs "generate --client jogo-acoes --permissions email:send"
-      Then the exit code is 1
-      And stderr is "Error: --permissions requires a permission catalog. None is configured for this instance."
-      And no key is saved
-
-    Scenario: list and validate behave exactly as before this feature
-      Given client "jogo-acoes" has an active key
-      When the operator runs "list"
-      Then the header has no "PERMISSIONS" column
-      When the operator runs "validate" with that key on stdin
-      Then stdout is "API key is valid for client 'jogo-acoes'."
-
-    Scenario: the validator returns no permissions
-      Given client "jogo-acoes" has an active key
-      When the protected service validates that key
-      Then the result is valid with no permissions
-```
+Os cenários cobrem, numa instância com catálogo: as permissões padrão sem `--permissions`, só
+as listadas com a opção, repetição, permissão desconhecida, lista vazia, a segunda linha de
+`validate`, a coluna de `list` e uma chave anterior à 1.1.0 recebendo as padrão. Numa instância
+sem catálogo: `generate`, `list` e `validate` iguais a antes, `--permissions` recusado e o
+validador sem permissões. A suíte caixa-preta acrescenta o exit 2 de um catálogo inválido, e
+todos os `.feature` que já existiam continuam rodando sem catálogo e sem mudança.
 
 ## Requisitos funcionais
 
