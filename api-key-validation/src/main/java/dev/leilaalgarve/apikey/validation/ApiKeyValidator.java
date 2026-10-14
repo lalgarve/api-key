@@ -4,6 +4,7 @@ import dev.leilaalgarve.apikey.core.ApiKey;
 import dev.leilaalgarve.apikey.core.ApiKeyFormat;
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidationResult.Invalid;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidationResult.Valid;
 import java.time.Clock;
@@ -27,11 +28,18 @@ public class ApiKeyValidator {
     private final ApiKeyRepository repository;
     private final ApiKeyHasher hasher;
     private final Clock clock;
+    private final PermissionCatalog catalog;
 
+    /** Without a permission catalog: a valid key never carries permissions, as in 1.0.x. */
     public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock) {
+        this(repository, hasher, clock, PermissionCatalog.none());
+    }
+
+    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock, PermissionCatalog catalog) {
         this.repository = repository;
         this.hasher = hasher;
         this.clock = clock;
+        this.catalog = catalog;
     }
 
     /**
@@ -40,8 +48,9 @@ public class ApiKeyValidator {
      * consumer's (plan.md, "Fonte do 'agora' para revogação/expiração").
      */
     @Autowired
-    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, ObjectProvider<Clock> clock) {
-        this(repository, hasher, clock.getIfAvailable(Clock::systemUTC));
+    public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, ObjectProvider<Clock> clock,
+            PermissionCatalog catalog) {
+        this(repository, hasher, clock.getIfAvailable(Clock::systemUTC), catalog);
     }
 
     public ApiKeyValidationResult validate(String rawKey) {
@@ -51,6 +60,9 @@ public class ApiKeyValidator {
         if (!ApiKeyFormat.matches(rawKey)) {
             return new Invalid(ApiKeyFailureReason.MALFORMED);
         }
+        // A misconfigured catalog is an infrastructure failure, like a missing pepper -- thrown
+        // before the lookup so it never depends on which key happens to be presented.
+        catalog.requireValid();
 
         Optional<ApiKey> found = repository.findByKeyHash(hasher.hash(rawKey));
         if (found.isEmpty()) {
@@ -66,6 +78,6 @@ public class ApiKeyValidator {
         if (key.isExpired(now)) {
             return new Invalid(ApiKeyFailureReason.EXPIRED);
         }
-        return new Valid(key.getClientName());
+        return new Valid(key.getClientName(), catalog.effectivePermissions(key));
     }
 }

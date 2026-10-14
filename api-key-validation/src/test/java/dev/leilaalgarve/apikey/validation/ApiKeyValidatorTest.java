@@ -7,7 +7,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.InvalidPermissionCatalogException;
 import dev.leilaalgarve.apikey.core.MissingHmacPepperException;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
+import dev.leilaalgarve.apikey.core.PermissionCatalog.Entry;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidationResult.Invalid;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidationResult.Valid;
 import dev.leilaalgarve.apikey.validation.IssuedKeyMother.IssuedKey;
@@ -16,6 +19,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -193,5 +198,78 @@ class ApiKeyValidatorTest {
 
         assertThat(noPepper.validate(null)).isEqualTo(new Invalid(ApiKeyFailureReason.MISSING));
         assertThat(noPepper.validate("not-a-key")).isEqualTo(new Invalid(ApiKeyFailureReason.MALFORMED));
+    }
+
+    private ApiKeyValidator withCatalog(PermissionCatalog catalog) {
+        return new ApiKeyValidator(repository, hasher, Clock.fixed(NOW, ZoneOffset.UTC), catalog);
+    }
+
+    private static final PermissionCatalog EMAIL_SERVICE = new PermissionCatalog(List.of(
+            new Entry("email:send", true), new Entry("disposable-email:admin", false)));
+
+    @Test
+    void validKeyCarriesItsStoredPermissions() {
+        IssuedKey issued = activeKey(NOW).forClient("email-admin")
+                .withPermissions("disposable-email:admin").saveWith(repository, hasher);
+
+        assertThat(withCatalog(EMAIL_SERVICE).validate(issued.rawKey()))
+                .isEqualTo(new Valid("email-admin", Set.of("disposable-email:admin")));
+    }
+
+    @Test
+    void keyWithoutStoredPermissionsGetsTheCatalogsDefaults() {
+        IssuedKey issued = activeKey(NOW).saveWith(repository, hasher);
+
+        assertThat(withCatalog(EMAIL_SERVICE).validate(issued.rawKey()))
+                .isEqualTo(new Valid("jogo-acoes", Set.of("email:send")));
+    }
+
+    @Test
+    void withoutACatalogAKeyWithoutStoredPermissionsHasNone() {
+        IssuedKey issued = activeKey(NOW).saveWith(repository, hasher);
+
+        assertThat(withCatalog(PermissionCatalog.none()).validate(issued.rawKey()))
+                .isEqualTo(new Valid("jogo-acoes", Set.of()));
+    }
+
+    @Test
+    void storedPermissionsAreReturnedEvenIfTheyLeftTheCatalog() {
+        IssuedKey issued = activeKey(NOW).withPermissions("email:legacy").saveWith(repository, hasher);
+
+        assertThat(withCatalog(EMAIL_SERVICE).validate(issued.rawKey()))
+                .isEqualTo(new Valid("jogo-acoes", Set.of("email:legacy")));
+    }
+
+    @Test
+    void hasPermissionMatchesTheExactName() {
+        IssuedKey issued = activeKey(NOW).withPermissions("disposable-email:admin").saveWith(repository, hasher);
+
+        Valid valid = (Valid) withCatalog(EMAIL_SERVICE).validate(issued.rawKey());
+
+        assertThat(valid.hasPermission("disposable-email:admin")).isTrue();
+        assertThat(valid.hasPermission("email:send")).isFalse();
+        assertThat(valid.hasPermission("disposable-email")).isFalse();
+    }
+
+    @Test
+    void anInvalidCatalogIsAnInfrastructureFailureNotAResult() {
+        IssuedKey issued = activeKey(NOW).saveWith(repository, hasher);
+        ApiKeyValidator misconfigured = withCatalog(new PermissionCatalog(List.of(new Entry("email:send", false))));
+
+        assertThatThrownBy(() -> misconfigured.validate(issued.rawKey()))
+                .isInstanceOf(InvalidPermissionCatalogException.class);
+        assertThat(misconfigured.validate(null)).isEqualTo(new Invalid(ApiKeyFailureReason.MISSING));
+        assertThat(misconfigured.validate("not-a-key")).isEqualTo(new Invalid(ApiKeyFailureReason.MALFORMED));
+    }
+
+    @Test
+    void validCopiesAndFreezesThePermissions() {
+        Set<String> mutable = new java.util.HashSet<>(Set.of("email:send"));
+        Valid valid = new Valid("jogo-acoes", mutable);
+        mutable.add("disposable-email:admin");
+
+        assertThat(valid.permissions()).containsExactly("email:send");
+        assertThatThrownBy(() -> valid.permissions().add("x")).isInstanceOf(UnsupportedOperationException.class);
+        assertThat(new Valid("jogo-acoes").permissions()).isEmpty();
     }
 }
