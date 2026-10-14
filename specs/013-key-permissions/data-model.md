@@ -14,8 +14,8 @@ Sem alteração de coluna (ver `001-generate-api-key/data-model.md` e
 | `api_key_id` | BIGINT | sim | referência a `api_keys.id`, `ON DELETE CASCADE` |
 | `permission` | VARCHAR(100) | sim | nome de permissão no formato de FR2 de `spec.md`; precisava estar no catálogo quando a chave foi gerada |
 
-Chave primária composta `(api_key_id, permission)`. Pode ser uma `@ElementCollection` de
-`ApiKey` no JPA; a escolha fica para `plan.md`.
+Chave primária composta `(api_key_id, permission)`. Mapeada como `@ElementCollection` de
+`ApiKey`, sem entidade própria (ver `plan.md`).
 
 Migration nova `V3__create_api_key_permissions_table.sql`, em `db/migration-api-key`. Ela só
 cria a tabela: nenhuma coluna existente muda, e nenhuma linha é inserida para as chaves já
@@ -44,9 +44,9 @@ O catálogo de permissões não é tabela: é configuração da instância (`api
 
 ## Invariantes
 
-- Uma chave gerada pela 1.2.0 numa instância com catálogo tem pelo menos uma linha em
+- Uma chave gerada pela 1.1.0 numa instância com catálogo tem pelo menos uma linha em
   `api_key_permissions`.
-- Uma chave sem nenhuma linha é uma chave anterior à 1.2.0, ou uma chave gerada numa instância
+- Uma chave sem nenhuma linha é uma chave anterior à 1.1.0, ou uma chave gerada numa instância
   sem catálogo. As permissões efetivas dela seguem FR13 de `spec.md`.
 - As linhas de uma chave só são escritas na mesma transação que cria a chave e nunca são
   alteradas depois (FR10).

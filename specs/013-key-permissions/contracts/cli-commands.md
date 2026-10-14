@@ -34,7 +34,7 @@ Como qualquer propriedade do Spring Boot, também pode vir de variável de ambie
 (`API_KEY_PERMISSIONS_0_NAME=email:send`, `API_KEY_PERMISSIONS_0_DEFAULT=true`, ...).
 
 Sem `api-key.permissions`, ou com a lista vazia, a instância não tem catálogo, e todos os
-comandos se comportam como na 1.1.0.
+comandos se comportam como antes desta spec.
 
 **Erro de configuração (stderr), qualquer comando:**
 
@@ -125,7 +125,7 @@ ID  CLIENT       CREATED_AT            EXPIRES_AT            REVOKED_AT         
 8   email-admin  2026-10-14T09:00:00Z  -                     -                     active   disposable-email:admin,email:send
 ```
 
-Uma chave emitida antes da 1.2.0 mostra as permissões que o validador devolveria para ela
+Uma chave emitida antes da 1.1.0 mostra as permissões que o validador devolveria para ela
 (FR13 de `spec.md`). Uma chave sem nenhuma permissão efetiva mostra `-`.
 
 Filtros, mensagem de "nenhum resultado" e exit codes não mudam.

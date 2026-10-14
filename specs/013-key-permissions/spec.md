@@ -1,8 +1,8 @@
 # Spec: key-permissions
 
-**Status:** rascunho
+**Status:** aprovada — não implementada
 **Issue:** #14
-**Versão alvo:** 1.2.0 (versão menor, compatível com 1.0.x e 1.1.0)
+**Versão alvo:** 1.1.0 (versão menor, compatível com 1.0.x), junto com `010-validate-api-key-cli`
 
 ## Resumo
 
@@ -29,8 +29,8 @@ chave válida.
 ### Por que compatível
 
 A 1.0.0 e a 1.0.1 já saíram, e as bibliotecas `api-key-core` e `api-key-validation` estão
-publicadas no GitHub Packages. Por isso esta feature é uma versão menor (1.2.0, depois da 1.1.0
-com o `validate` de `010-validate-api-key-cli`): quem não configurar permissões não percebe
+publicadas no GitHub Packages. Por isso esta feature entra numa versão menor, a 1.1.0, junto
+com o `validate` de `010-validate-api-key-cli`: quem não configurar permissões não percebe
 diferença nenhuma.
 
 Isso é uma escolha desta spec, mais restrita do que a seção "Status do sistema: pré-produção"
@@ -39,7 +39,8 @@ pré-produção, e esta spec não a altera.
 
 A compatibilidade vem da regra do padrão:
 
-- Instância sem catálogo configurado: tudo se comporta como na 1.1.0. Nenhuma linha de saída
+- Instância sem catálogo configurado: tudo se comporta como antes desta spec (`generate`,
+  `revoke` e `list` como na 1.0.x; `validate` como em `010`). Nenhuma linha de saída
   muda, e o validador devolve um conjunto vazio de permissões.
 - Instância com catálogo, `generate` sem `--permissions`: a chave recebe as permissões padrão.
   O `jogo-acoes`, por exemplo, continua gerando a chave com o mesmo comando de antes e recebe a
@@ -123,20 +124,20 @@ Feature: Per-key permissions
       And the last column of the header is "PERMISSIONS"
       And the row of that key ends with "email:send"
 
-    Scenario: a key issued before 1.2.0 gets the default permissions
-      Given client "jogo-acoes" has an active key issued before 1.2.0
+    Scenario: a key issued before 1.1.0 gets the default permissions
+      Given client "jogo-acoes" has an active key issued before 1.1.0
       When the protected service validates that key
       Then the result is valid with the permissions "email:send"
 
-  Rule: instance without a permission catalog (1.1.0 behaviour)
+  Rule: instance without a permission catalog (behaviour before this feature)
 
     Background:
       Given no permission catalog is configured
 
-    Scenario: generate behaves exactly as in 1.1.0
+    Scenario: generate behaves exactly as in 1.0.x
       When the operator runs "generate --client jogo-acoes"
       Then the exit code is 0
-      And stdout is the same as in 1.1.0, with no "Permissions:" line
+      And stdout is the same as in 1.0.x, with no "Permissions:" line
 
     Scenario: --permissions is rejected
       When the operator runs "generate --client jogo-acoes --permissions email:send"
@@ -144,7 +145,7 @@ Feature: Per-key permissions
       And stderr is "Error: --permissions requires a permission catalog. None is configured for this instance."
       And no key is saved
 
-    Scenario: list and validate behave exactly as in 1.1.0
+    Scenario: list and validate behave exactly as before this feature
       Given client "jogo-acoes" has an active key
       When the operator runs "list"
       Then the header has no "PERMISSIONS" column
@@ -174,7 +175,7 @@ Feature: Per-key permissions
   comando da CLI sai com exit 2 antes de fazer qualquer coisa (mesmo código do pepper ausente,
   ver `001-generate-api-key`).
 - FR4: Catálogo ausente ou vazio significa "instância sem permissões". Nesse caso a CLI e a
-  biblioteca se comportam exatamente como na 1.1.0 (ver "Por que compatível").
+  biblioteca se comportam exatamente como antes desta spec (ver "Por que compatível").
 
 ### `generate`
 
@@ -205,7 +206,7 @@ Feature: Per-key permissions
   `ApiKeyFailureReason` não ganha valor novo. Assim nenhum `switch` exaustivo de quem já
   consome a biblioteca deixa de compilar. Que resposta dar quando falta a permissão (ex.: HTTP
   403) é decisão do serviço, como já é para os motivos de falha de `008-validate-api-key`.
-- FR13: Uma chave sem nenhuma permissão gravada (emitida antes da 1.2.0) é tratada como se
+- FR13: Uma chave sem nenhuma permissão gravada (emitida antes da 1.1.0) é tratada como se
   tivesse as permissões padrão do catálogo da instância. Sem catálogo, o conjunto é vazio. O
   serviço protegido lê o mesmo catálogo (`api-key.permissions`), como já lê o pepper. Ver
   "Decisões em aberto", item 1.
@@ -214,7 +215,7 @@ Feature: Per-key permissions
 
 - FR14: `validate` (de `010-validate-api-key-cli`), para uma chave válida com permissões,
   imprime uma segunda linha `Permissions: <p1>, <p2>.`, em ordem alfabética. Sem permissões, a
-  saída é a da 1.1.0. Exit codes não mudam.
+  saída é a de `010`. Exit codes não mudam.
 - FR15: `list`, numa instância com catálogo, ganha uma coluna `PERMISSIONS` no fim da tabela,
   com as permissões de cada chave separadas por vírgula, em ordem alfabética. As chaves de FR13
   mostram as permissões padrão, igual ao que o validador devolve. Numa instância sem catálogo a
@@ -224,18 +225,18 @@ Feature: Per-key permissions
 
 ## Requisitos não-funcionais
 
-- Compatibilidade (versão menor, 1.2.0):
-  - Um banco criado pela 1.0.x ou 1.1.0 sobe sem nenhum passo manual. A migration nova só
+- Compatibilidade (versão menor, 1.1.0):
+  - Um banco criado pela 1.0.x sobe sem nenhum passo manual. A migration nova só
     acrescenta uma tabela (ver [`data-model.md`](data-model.md)); nenhuma coluna existente
     muda.
   - Numa instância sem catálogo, a saída e os exit codes de `generate`, `revoke`, `list` e
-    `validate` são os da 1.1.0, byte a byte. A suíte caixa-preta de `012` continua verde sem
+    `validate` são os de antes desta spec (1.0.x, e `010` para `validate`), byte a byte. A suíte caixa-preta de `012` continua verde sem
     nenhuma alteração nos cenários existentes.
   - O uso documentado da biblioteca continua compilando e funcionando:
     `validator.validate(chave)` e `case ApiKeyValidationResult.Valid valid -> valid.clientName()`.
     A exceção é quem desconstrói o record com padrão de record
     (`case Valid(String clientName)`), que deixa de compilar porque o record ganha um
-    componente. O README não usa essa forma, e a nota de release da 1.2.0 deve avisar.
+    componente. O README não usa essa forma, e a nota de release da 1.1.0 deve avisar.
 - A chave em texto puro continua nunca aparecendo em log nem em mensagem de erro, inclusive
   nos erros novos de `--permissions`.
 - Validar uma chave continua sendo uma consulta pelo hash. Buscar as permissões não pode virar
@@ -257,7 +258,7 @@ Feature: Per-key permissions
 
 Nenhuma — as duas que estavam pendentes foram resolvidas:
 
-1. **Chaves emitidas antes da 1.2.0 (FR13).** Elas não têm permissão gravada e são tratadas
+1. **Chaves emitidas antes da 1.1.0 (FR13).** Elas não têm permissão gravada e são tratadas
    como se tivessem as permissões padrão do catálogo, na hora da validação. Assim o
    `jogo-acoes` continua funcionando sem gerar chave nova. Consequências aceitas: o serviço
    protegido precisa ler o mesmo catálogo (`api-key.permissions`), como já lê o pepper; e, se

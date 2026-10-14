@@ -16,7 +16,7 @@ public sealed interface ApiKeyValidationResult {
             permissions = Set.copyOf(permissions);
         }
 
-        /** Same as 1.0/1.1: a valid key with no permissions. */
+        /** Same as 1.0.x: a valid key with no permissions. */
         public Valid(String clientName) {
             this(clientName, Set.of());
         }
@@ -38,7 +38,7 @@ public sealed interface ApiKeyValidationResult {
 
 **Compatibilidade:** `case Valid valid -> valid.clientName()` (a forma do README) continua
 compilando. Desconstruir com padrão de record (`case Valid(String clientName)`) deixa de
-compilar, porque o record ganhou um componente. Precisa constar na nota de release da 1.2.0.
+compilar, porque o record ganhou um componente. Precisa constar na nota de release da 1.1.0.
 
 **Uso no serviço protegido:**
 
@@ -63,7 +63,7 @@ ganha um construtor; os que já existem continuam existindo:
 
 ```java
 public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock) { ... }
-// igual à 1.1.0: sem catálogo
+// igual à 1.0.x: sem catálogo
 
 public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock,
         PermissionCatalog catalog) { ... }   // novo
@@ -77,7 +77,7 @@ O construtor do Spring troca de assinatura (ganha o catálogo), mas quem consome
 recebe o validador por injeção e não chama esse construtor. O `PermissionCatalog` é registrado
 pela própria biblioteca e fica sem catálogo quando `api-key.permissions` não está configurado.
 Quem cria o validador à mão (ex.: em teste) com o construtor de três argumentos continua com o
-comportamento da 1.1.0.
+comportamento da 1.0.x.
 
 O que muda é o conteúdo de `Valid`:
 
@@ -87,14 +87,19 @@ O que muda é o conteúdo de `Valid`:
 | Sem permissões gravadas, instância com catálogo | As permissões padrão do catálogo (FR13 de `spec.md`) |
 | Sem permissões gravadas, instância sem catálogo | Vazio |
 
-As permissões são lidas na mesma consulta (ou na mesma transação) que busca a chave pelo hash.
+As permissões da chave encontrada vêm junto com ela (`ApiKey.getPermissions()`), sem uma
+consulta extra por chave em `list` (ver `plan.md`).
+
+Se o catálogo estiver inválido, `validate` lança `InvalidPermissionCatalogException` em toda
+chamada que passa do ramo `MALFORMED`, do mesmo jeito que já lança `MissingHmacPepperException`
+sem pepper. É falha de configuração, não um resultado do domínio.
 
 ## `ApiKey` (alterado, `api-key-core`)
 
 Ganha as permissões gravadas da chave:
 
 ```java
-public Set<String> getPermissions();   // imutável, nunca nulo; vazio para chaves anteriores à 1.2.0
+public Set<String> getPermissions();   // imutável, nunca nulo; vazio para chaves anteriores à 1.1.0
 ```
 
 A criação de uma chave passa a receber as permissões. Os construtores e fábricas existentes
@@ -108,13 +113,23 @@ Leitura de `api-key.permissions`, compartilhada pela CLI e pela biblioteca:
 package dev.leilaalgarve.apikey.core;
 
 public final class PermissionCatalog {
-    public boolean isConfigured();          // false = sem catálogo (comportamento 1.1.0)
+    public boolean isConfigured();          // false = sem catálogo (comportamento 1.0.x)
     public SortedSet<String> names();       // todas, em ordem alfabética
     public SortedSet<String> defaults();    // as marcadas como padrão
     public boolean contains(String name);
+
+    /** As gravadas na chave; se ela não tiver nenhuma, as padrão (FR13); sem catálogo, vazio. */
+    public SortedSet<String> effectivePermissions(ApiKey key);
+
+    /** Lança InvalidPermissionCatalogException se o catálogo estiver inválido. */
+    public void requireValid();
 }
+
+public class InvalidPermissionCatalogException extends RuntimeException { ... }
 ```
 
-Um catálogo inválido (nome fora do formato, nome repetido, nenhuma permissão padrão) falha na
-inicialização do contexto do Spring, com uma exceção própria. A CLI traduz essa exceção para
-o exit 2 do contrato de CLI.
+Um catálogo inválido (nome fora do formato, nome repetido, nenhuma permissão padrão) **não**
+impede o contexto do Spring de subir. O problema fica guardado, e os métodos acima lançam
+`InvalidPermissionCatalogException` com a mensagem do contrato de CLI. A CLI chama
+`requireValid()` antes de despachar qualquer comando e traduz a exceção para o exit 2. É o
+mesmo padrão do pepper (`ApiKeyHasher` só reclama quando é usado); ver `plan.md`.
