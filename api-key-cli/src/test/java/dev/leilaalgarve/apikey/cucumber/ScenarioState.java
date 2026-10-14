@@ -1,5 +1,6 @@
 package dev.leilaalgarve.apikey.cucumber;
 
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,10 @@ public class ScenarioState {
     public String lastClient;
     /** The plaintext of the last key a "Given" step issued -- what "that key" refers to in validate-api-key-cli.feature. */
     public String lastIssuedRawKey;
+    /** The id of that same key -- what "that key" means in list's output. */
+    public Long lastIssuedKeyId;
+    /** The scenario's permission catalog; null means the Spring context's own beans (no catalog). */
+    public PermissionCatalog catalog;
 
     public ScenarioState() {
         reset();
@@ -55,6 +60,8 @@ public class ScenarioState {
         hmacPepperMissing = false;
         lastClient = null;
         lastIssuedRawKey = null;
+        lastIssuedKeyId = null;
+        catalog = null;
     }
 
     public String qualifyClient(String client) {

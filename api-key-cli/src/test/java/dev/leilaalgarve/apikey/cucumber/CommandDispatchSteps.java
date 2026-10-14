@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.leilaalgarve.apikey.CliCommand;
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
 import dev.leilaalgarve.apikey.issuance.ApiKeyGenerator;
 import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.issuance.OldKeyRotationPolicy;
 import dev.leilaalgarve.apikey.management.ListCommand;
 import dev.leilaalgarve.apikey.management.RevokeCommand;
 import dev.leilaalgarve.apikey.management.ValidateCommand;
+import dev.leilaalgarve.apikey.validation.ApiKeyValidator;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -19,11 +21,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The one generic "run a CLI command and check what happened" vocabulary every feature shares
@@ -53,6 +58,12 @@ public class CommandDispatchSteps {
 
     @Autowired
     private ApiKeyGenerator apiKeyGenerator;
+
+    @Autowired
+    private ApiKeyHasher hasher;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Given("the HMAC pepper is not configured")
     public void theHmacPepperIsNotConfigured() {
@@ -98,6 +109,10 @@ public class CommandDispatchSteps {
         PrintStream out = new PrintStream(state.outBytes, true, StandardCharsets.UTF_8);
         PrintStream err = new PrintStream(state.errBytes, true, StandardCharsets.UTF_8);
 
+        if (state.catalog != null) {
+            dispatchWithScenarioCatalog(tokens, in, out, err);
+            return;
+        }
         CliCommand command = switch (tokens.get(0)) {
             case "generate" -> state.hmacPepperMissing ? generateCommandWithMissingPepper() : generateCommand;
             case "revoke" -> revokeCommand;
@@ -106,6 +121,24 @@ public class CommandDispatchSteps {
             default -> throw new IllegalArgumentException("Unknown command word: " + tokens.get(0));
         };
         state.exitCode = command.execute(tokens.toArray(new String[0]), in, out, err);
+    }
+
+    /**
+     * The context's beans have no catalog, so a scenario that sets one gets its own commands. A
+     * hand-built GenerateCommand has no @Transactional proxy, hence the TransactionTemplate.
+     */
+    private void dispatchWithScenarioCatalog(List<String> tokens, InputStream in, PrintStream out, PrintStream err) {
+        PermissionCatalog catalog = state.catalog;
+        String[] args = tokens.toArray(new String[0]);
+        CliCommand command = switch (tokens.get(0)) {
+            case "generate" -> new GenerateCommand(apiKeyGenerator, hasher, repository,
+                    new OldKeyRotationPolicy(repository), catalog);
+            case "revoke" -> revokeCommand;
+            case "list" -> new ListCommand(repository, catalog);
+            case "validate" -> new ValidateCommand(new ApiKeyValidator(repository, hasher, Clock.systemUTC(), catalog));
+            default -> throw new IllegalArgumentException("Unknown command word: " + tokens.get(0));
+        };
+        state.exitCode = new TransactionTemplate(transactionManager).execute(status -> command.execute(args, in, out, err));
     }
 
     private static InputStream stdinOf(String content) {

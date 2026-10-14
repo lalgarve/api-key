@@ -7,6 +7,9 @@ import dev.leilaalgarve.apikey.issuance.ApiKeyGenerator;
 import io.cucumber.java.en.Given;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -32,6 +35,18 @@ public class ValidationLifecycleSteps {
     @Given("client {string} has an active key")
     public void clientHasAnActiveKey(String client) {
         issueKey(client, Instant.now(), null, null);
+    }
+
+    @Given("client {string} has an active key issued before 1.1.0")
+    public void clientHasAnActiveKeyIssuedBefore110(String client) {
+        // No stored permission at all -- exactly what a 1.0.x key looks like in the database.
+        issueKey(client, Instant.now(), null, null);
+    }
+
+    @Given("client {string} has an active key with the permissions {string}")
+    public void clientHasAnActiveKeyWithThePermissions(String client, String permissions) {
+        Set<String> parsed = Arrays.stream(permissions.split(",")).map(String::strip).collect(Collectors.toSet());
+        issueKey(client, Instant.now(), null, null, parsed);
     }
 
     @Given("client {string} has an active key that never expires")
@@ -63,13 +78,17 @@ public class ValidationLifecycleSteps {
     }
 
     private void issueKey(String client, Instant createdAt, Instant expiresAt, Instant revokedAt) {
+        issueKey(client, createdAt, expiresAt, revokedAt, Set.of());
+    }
+
+    private void issueKey(String client, Instant createdAt, Instant expiresAt, Instant revokedAt, Set<String> permissions) {
         String qualifiedClient = state.qualifyClient(client);
         String rawKey = generator.generate();
-        ApiKey key = new ApiKey(qualifiedClient, hasher.hash(rawKey), createdAt, expiresAt);
+        ApiKey key = new ApiKey(qualifiedClient, hasher.hash(rawKey), createdAt, expiresAt, permissions);
         if (revokedAt != null) {
             key.revokeAt(revokedAt);
         }
-        repository.save(key);
+        state.lastIssuedKeyId = repository.save(key).getId();
         state.lastIssuedRawKey = rawKey;
     }
 }
