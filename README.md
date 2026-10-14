@@ -230,7 +230,7 @@ O serviço protegido declara o repositório do GitHub Packages e a dependência:
 <dependency>
   <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>api-key-validation</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
@@ -258,6 +258,21 @@ nele, renomear a tabela uma vez:
 ```sql
 ALTER TABLE flyway_schema_history RENAME TO api_key_schema_history;
 ```
+
+### Atualizando para a 1.1.0
+
+A 1.1.0 traz o comando `validate` (`010-validate-api-key-cli`) e as permissões por chave
+(`013-key-permissions`). Sem `api-key.permissions` configurado, tudo funciona como na 1.0.x.
+Três cuidados:
+
+- Rode qualquer comando da CLI 1.1.0 (um `list` basta) **antes** de publicar o serviço com a
+  biblioteca 1.1.0. A migration V3 cria `api_key_permissions`, que a biblioteca mapeia; sem
+  ela, o serviço não sobe.
+- `case ApiKeyValidationResult.Valid(String clientName)` (desconstrução de record) deixa de
+  compilar, porque `Valid` ganhou o componente `permissions`. `case Valid valid ->
+  valid.clientName()` continua funcionando.
+- Se usar permissões, a CLI e o serviço precisam da mesma configuração `api-key.permissions`,
+  como já acontece com o pepper.
 
 Cada release publicada fica em [Releases](https://github.com/lalgarve/api-key/releases).
 
