@@ -12,8 +12,8 @@ O restante (argumentos, saídas e exit codes já existentes) não muda. `revoke`
 
 ## Catálogo de permissões
 
-Configuração da instância, lida pela CLI e pela biblioteca de validação (ver "Decisões em
-aberto", item 1, em `spec.md`). Exemplo para o serviço de e-mail, em `application.yml` ou no
+Configuração da instância, lida pela CLI e pela biblioteca de validação (ver FR13 e
+"Decisões em aberto", item 1, em `spec.md`). Exemplo para o serviço de e-mail, em `application.yml` ou no
 arquivo do perfil:
 
 ```yaml

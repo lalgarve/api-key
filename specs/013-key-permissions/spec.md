@@ -206,7 +206,8 @@ Feature: Per-key permissions
   consome a biblioteca deixa de compilar. Que resposta dar quando falta a permissão (ex.: HTTP
   403) é decisão do serviço, como já é para os motivos de falha de `008-validate-api-key`.
 - FR13: Uma chave sem nenhuma permissão gravada (emitida antes da 1.2.0) é tratada como se
-  tivesse as permissões padrão do catálogo da instância. Sem catálogo, o conjunto é vazio. Ver
+  tivesse as permissões padrão do catálogo da instância. Sem catálogo, o conjunto é vazio. O
+  serviço protegido lê o mesmo catálogo (`api-key.permissions`), como já lê o pepper. Ver
   "Decisões em aberto", item 1.
 
 ### `validate` e `list`
@@ -254,17 +255,18 @@ Feature: Per-key permissions
 
 ## Decisões em aberto
 
-1. **Chaves emitidas antes da 1.2.0 (FR13).** Elas não têm permissão gravada. Duas opções:
-   - **A (proposta):** são tratadas como se tivessem as permissões padrão do catálogo, na hora
-     da validação. Mantém o `jogo-acoes` funcionando sem gerar chave nova. O custo: o serviço
-     protegido precisa ler o mesmo catálogo (`api-key.permissions`), como já lê o pepper. E, se
-     as permissões padrão mudarem depois, as permissões dessas chaves mudam junto.
-   - **B:** o validador devolve um conjunto vazio para elas, e o serviço decide o que fazer.
-     A biblioteca fica sem configuração nova, mas cada serviço tem que tratar o caso à mão.
+Nenhuma — as duas que estavam pendentes foram resolvidas:
 
-   Como ainda não há chave real em produção (o serviço de e-mail ainda está em especificação),
-   o impacto prático é pequeno nos dois casos.
-2. **Formato da opção.** A proposta é uma lista separada por vírgula (`--permissions a,b`),
-   que encaixa no parser atual (`CliArgs.extractOption` lê uma ocorrência por opção). A
-   alternativa é repetir a opção (`--permission a --permission b`), que exigiria mudar o
-   parser.
+1. **Chaves emitidas antes da 1.2.0 (FR13).** Elas não têm permissão gravada e são tratadas
+   como se tivessem as permissões padrão do catálogo, na hora da validação. Assim o
+   `jogo-acoes` continua funcionando sem gerar chave nova. Consequências aceitas: o serviço
+   protegido precisa ler o mesmo catálogo (`api-key.permissions`), como já lê o pepper; e, se
+   as permissões padrão mudarem depois, as permissões dessas chaves mudam junto. Como ainda
+   não há chave real em produção, o impacto prático é pequeno.
+
+   Alternativa descartada: o validador devolver um conjunto vazio para elas e cada serviço
+   tratar o caso à mão. Deixaria a biblioteca sem configuração nova, mas empurraria a regra de
+   compatibilidade para cada serviço.
+2. **Formato da opção.** Lista separada por vírgula (`--permissions a,b`), que encaixa no
+   parser atual (`CliArgs.extractOption` lê uma ocorrência por opção). Alternativa descartada:
+   repetir a opção (`--permission a --permission b`), que exigiria mudar o parser.

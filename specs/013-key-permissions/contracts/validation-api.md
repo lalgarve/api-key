@@ -58,12 +58,33 @@ switch (validator.validate(request.getHeader("X-API-Key"))) {
 
 ## `ApiKeyValidator` (alterado)
 
-Assinaturas públicas e construtores não mudam. O que muda é o conteúdo de `Valid`:
+`validate` não muda de assinatura. Como o validador agora lê o catálogo (FR13 de `spec.md`),
+ganha um construtor; os que já existem continuam existindo:
+
+```java
+public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock) { ... }
+// igual à 1.1.0: sem catálogo
+
+public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher, Clock clock,
+        PermissionCatalog catalog) { ... }   // novo
+
+@Autowired
+public ApiKeyValidator(ApiKeyRepository repository, ApiKeyHasher hasher,
+        ObjectProvider<Clock> clock, PermissionCatalog catalog) { ... }
+```
+
+O construtor do Spring troca de assinatura (ganha o catálogo), mas quem consome a biblioteca
+recebe o validador por injeção e não chama esse construtor. O `PermissionCatalog` é registrado
+pela própria biblioteca e fica sem catálogo quando `api-key.permissions` não está configurado.
+Quem cria o validador à mão (ex.: em teste) com o construtor de três argumentos continua com o
+comportamento da 1.1.0.
+
+O que muda é o conteúdo de `Valid`:
 
 | Chave encontrada, válida | `Valid.permissions()` |
 |---|---|
 | Com permissões gravadas | As permissões gravadas, mesmo que alguma tenha saído do catálogo |
-| Sem permissões gravadas, instância com catálogo | As permissões padrão do catálogo (proposta A de "Decisões em aberto", item 1) |
+| Sem permissões gravadas, instância com catálogo | As permissões padrão do catálogo (FR13 de `spec.md`) |
 | Sem permissões gravadas, instância sem catálogo | Vazio |
 
 As permissões são lidas na mesma consulta (ou na mesma transação) que busca a chave pelo hash.
