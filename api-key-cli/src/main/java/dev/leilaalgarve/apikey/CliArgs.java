@@ -1,5 +1,8 @@
 package dev.leilaalgarve.apikey;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Shared `--flag value` parsing helpers for every {@link CliCommand}. args[0] is always the command word, never a flag. */
 public final class CliArgs {
 
@@ -23,6 +26,18 @@ public final class CliArgs {
     public static Integer parseNonNegativeInt(String raw) {
         Integer value = parseInt(raw);
         return value != null && value >= 0 ? value : null;
+    }
+
+    /** Comma-separated items, each stripped; blank items dropped, repeats kept once, first-seen order kept. */
+    public static List<String> parseCommaList(String raw) {
+        List<String> items = new ArrayList<>();
+        for (String item : raw.split(",", -1)) {
+            String stripped = item.strip();
+            if (!stripped.isEmpty() && !items.contains(stripped)) {
+                items.add(stripped);
+            }
+        }
+        return items;
     }
 
     public static Long parseLong(String raw) {

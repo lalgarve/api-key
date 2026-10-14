@@ -6,6 +6,8 @@ import dev.leilaalgarve.apikey.DeployoApiKeyApplication;
 import dev.leilaalgarve.apikey.core.ApiKey;
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
+import dev.leilaalgarve.apikey.core.PermissionCatalog.Entry;
 import dev.leilaalgarve.apikey.issuance.ApiKeyGenerator;
 import dev.leilaalgarve.apikey.validation.ApiKeyValidator;
 import java.io.ByteArrayInputStream;
@@ -17,6 +19,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,5 +190,21 @@ class ValidateCommandTest {
 
     private static String out(ByteArrayOutputStream bytes) {
         return bytes.toString(StandardCharsets.UTF_8);
+    }
+
+    @Test
+    void validKeyWithPermissionsPrintsThemOnASecondLine() {
+        String rawKey = generator.generate();
+        repository.save(new ApiKey("email-admin", hasher.hash(rawKey), NOW.minus(1, ChronoUnit.DAYS), null,
+                Set.of("email:send", "disposable-email:admin")));
+        PermissionCatalog catalog = new PermissionCatalog(List.of(
+                new Entry("email:send", true), new Entry("disposable-email:admin", false)));
+        command = new ValidateCommand(new ApiKeyValidator(repository, hasher, Clock.fixed(NOW, ZoneOffset.UTC), catalog));
+
+        Result result = run(rawKey);
+
+        assertThat(result.exitCode).isEqualTo(0);
+        assertThat(result.out).isEqualTo(
+                "API key is valid for client 'email-admin'.\nPermissions: disposable-email:admin, email:send.\n");
     }
 }

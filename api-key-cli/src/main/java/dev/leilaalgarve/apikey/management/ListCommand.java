@@ -5,6 +5,7 @@ import dev.leilaalgarve.apikey.CliCommand;
 import dev.leilaalgarve.apikey.CliOutput;
 import dev.leilaalgarve.apikey.core.ApiKey;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,6 +22,9 @@ import org.springframework.stereotype.Component;
  * priority revoked > expired > active per 004-list-api-keys/plan.md), optionally by client and
  * by an upcoming-revocation window, then print a plain text table. Read-only; never exposes
  * key_hash or the plaintext key. Only called by ApiKeyCliRunner when args[0] is "list".
+ *
+ * <p>With a permission catalog, a last PERMISSIONS column shows each key's effective
+ * permissions -- what the validator would return for it (specs/013-key-permissions FR15).
  */
 @Component
 public class ListCommand implements CliCommand {
@@ -27,9 +32,17 @@ public class ListCommand implements CliCommand {
     private static final List<String> VALID_STATUSES = List.of("active", "expired", "revoked", "all");
 
     private final ApiKeyRepository repository;
+    private final PermissionCatalog catalog;
 
+    /** Without a permission catalog: no PERMISSIONS column, as before 1.1.0. */
     public ListCommand(ApiKeyRepository repository) {
+        this(repository, PermissionCatalog.none());
+    }
+
+    @Autowired
+    public ListCommand(ApiKeyRepository repository, PermissionCatalog catalog) {
         this.repository = repository;
+        this.catalog = catalog;
     }
 
     @Override
@@ -79,7 +92,7 @@ public class ListCommand implements CliCommand {
             return 0;
         }
 
-        printTable(out, matching, now);
+        printTable(out, matching, now, catalog);
         return 0;
     }
 
@@ -88,22 +101,30 @@ public class ListCommand implements CliCommand {
         return revokedAt != null && revokedAt.isAfter(now) && !revokedAt.isAfter(now.plus(days, ChronoUnit.DAYS));
     }
 
-    private static void printTable(PrintStream out, List<ApiKey> keys, Instant now) {
-        String[] header = {"ID", "CLIENT", "CREATED_AT", "EXPIRES_AT", "REVOKED_AT", "STATUS"};
+    private static void printTable(PrintStream out, List<ApiKey> keys, Instant now, PermissionCatalog catalog) {
+        boolean withPermissions = catalog.isConfigured();
+        List<String> header = new ArrayList<>(List.of("ID", "CLIENT", "CREATED_AT", "EXPIRES_AT", "REVOKED_AT", "STATUS"));
+        if (withPermissions) {
+            header.add("PERMISSIONS");
+        }
         List<String[]> rows = new ArrayList<>();
-        rows.add(header);
+        rows.add(header.toArray(new String[0]));
         for (ApiKey key : keys) {
-            rows.add(new String[] {
+            List<String> row = new ArrayList<>(List.of(
                     String.valueOf(key.getId()),
                     key.getClientName(),
                     String.valueOf(key.getCreatedAt()),
                     key.getExpiresAt() == null ? "-" : key.getExpiresAt().toString(),
                     key.getRevokedAt() == null ? "-" : key.getRevokedAt().toString(),
-                    Status.of(key, now).label()
-            });
+                    Status.of(key, now).label()));
+            if (withPermissions) {
+                List<String> permissions = List.copyOf(catalog.effectivePermissions(key));
+                row.add(permissions.isEmpty() ? "-" : String.join(",", permissions));
+            }
+            rows.add(row.toArray(new String[0]));
         }
 
-        int columns = header.length;
+        int columns = header.size();
         int[] widths = new int[columns];
         for (String[] row : rows) {
             for (int i = 0; i < columns; i++) {

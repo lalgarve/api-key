@@ -7,9 +7,14 @@ import dev.leilaalgarve.apikey.core.ApiKey;
 import dev.leilaalgarve.apikey.core.ApiKeyHasher;
 import dev.leilaalgarve.apikey.core.ApiKeyRepository;
 import dev.leilaalgarve.apikey.core.MissingHmacPepperException;
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
 import java.io.PrintStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,13 +37,22 @@ public class GenerateCommand implements CliCommand {
     private final ApiKeyHasher hasher;
     private final ApiKeyRepository repository;
     private final OldKeyRotationPolicy rotationPolicy;
+    private final PermissionCatalog catalog;
 
+    /** Without a permission catalog: keys are generated with no permissions, as before 1.1.0. */
     public GenerateCommand(ApiKeyGenerator generator, ApiKeyHasher hasher, ApiKeyRepository repository,
             OldKeyRotationPolicy rotationPolicy) {
+        this(generator, hasher, repository, rotationPolicy, PermissionCatalog.none());
+    }
+
+    @Autowired
+    public GenerateCommand(ApiKeyGenerator generator, ApiKeyHasher hasher, ApiKeyRepository repository,
+            OldKeyRotationPolicy rotationPolicy, PermissionCatalog catalog) {
         this.generator = generator;
         this.hasher = hasher;
         this.repository = repository;
         this.rotationPolicy = rotationPolicy;
+        this.catalog = catalog;
     }
 
     @Override
@@ -72,6 +86,30 @@ public class GenerateCommand implements CliCommand {
             }
         }
 
+        // Without --permissions the key gets the catalog's defaults (none without a catalog);
+        // with it, only the listed ones (specs/013-key-permissions/spec.md FR6-FR7).
+        SortedSet<String> permissions = catalog.defaults();
+        String permissionsRaw = CliArgs.extractOption(args, "--permissions");
+        if (permissionsRaw != null) {
+            if (!catalog.isConfigured()) {
+                CliOutput.println(err, "Error: --permissions requires a permission catalog. None is configured for this instance.");
+                return 1;
+            }
+            List<String> requested = CliArgs.parseCommaList(permissionsRaw);
+            if (requested.isEmpty()) {
+                CliOutput.println(err, "Error: --permissions must list at least one permission.");
+                return 1;
+            }
+            for (String permission : requested) {
+                if (!catalog.contains(permission)) {
+                    CliOutput.println(err, "Error: unknown permission '" + permission + "'. Known permissions: "
+                            + String.join(", ", catalog.names()) + ".");
+                    return 1;
+                }
+            }
+            permissions = new TreeSet<>(requested);
+        }
+
         String plaintextKey = generator.generate();
 
         String keyHash;
@@ -100,7 +138,11 @@ public class GenerateCommand implements CliCommand {
         Instant expiresAt = validityDays == null ? null : createdAt.plus(validityDays, ChronoUnit.DAYS);
 
         try {
-            repository.save(new ApiKey(client, keyHash, createdAt, expiresAt));
+            repository.save(new ApiKey(client, keyHash, createdAt, expiresAt, permissions));
+            // The permission rows (and the rotation's updates) are otherwise only written at
+            // commit, after the key was already printed -- flush here so any failure lands in
+            // this catch and the key is never shown (013 spec.md FR8).
+            repository.flush();
         } catch (DataAccessException e) {
             if (rotationResult.updatedCount() > 0) {
                 // The old keys above were already revoked in this same transaction -- roll
@@ -130,6 +172,11 @@ public class GenerateCommand implements CliCommand {
                         + "' scheduled for revocation in " + revokeOldInDays + " days (on "
                         + rotationResult.revokedAt() + ").");
             }
+        }
+
+        // Always the last line, so no line from 001/003 moves (013 spec.md FR9).
+        if (!permissions.isEmpty()) {
+            CliOutput.println(out, "Permissions: " + String.join(", ", permissions) + ".");
         }
 
         return 0;
