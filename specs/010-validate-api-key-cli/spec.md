@@ -1,6 +1,6 @@
 # Spec: validate-api-key-cli
 
-**Status:** aprovada — não implementada
+**Status:** aprovada — implementada (T001-T009 concluídas)
 **Issue:** #39
 
 ## Resumo

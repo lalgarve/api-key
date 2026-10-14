@@ -34,6 +34,7 @@ export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
 java -jar api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
 java -jar api-key.jar revoke --id 3 [--in-days 14]
 java -jar api-key.jar list [--status active|expired|revoked|all] [--client jogo-acoes] [--revoking-within-days 30]
+java -jar api-key.jar validate < arquivo-com-a-chave
 ```
 
 A chave em texto puro é impressa **uma única vez**, na hora da geração — guarde-a
@@ -54,10 +55,18 @@ chaves com revogação agendada para os próximos N dias. O status de cada linha
 hora da consulta (nunca armazenado) — `revoked` tem prioridade sobre `expired`, que tem
 prioridade sobre `active`.
 
+`validate` lê a chave da **entrada padrão** (só a primeira linha, sem espaços nas pontas —
+nunca por argumento, que fica no histórico do shell e em `ps`), confere se ela é válida agora
+usando a mesma regra do serviço protegido (`ApiKeyValidator`, ver seção abaixo) e termina com
+um exit code distinto por motivo (`0` válida, `1` nenhuma chave informada, `2` formato
+inválido, `3` nenhuma chave corresponde, `4` revogada, `5` expirada) — nunca imprime a chave,
+o hash nem o `id`.
+
 Ver [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
 (estendido por [`specs/003-auto-revoke-on-rotation/contracts/cli-commands.md`](specs/003-auto-revoke-on-rotation/contracts/cli-commands.md)),
-[`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md)
-e [`specs/004-list-api-keys/contracts/cli-commands.md`](specs/004-list-api-keys/contracts/cli-commands.md)
+[`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md),
+[`specs/004-list-api-keys/contracts/cli-commands.md`](specs/004-list-api-keys/contracts/cli-commands.md)
+e [`specs/010-validate-api-key-cli/contracts/cli-commands.md`](specs/010-validate-api-key-cli/contracts/cli-commands.md)
 para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
 ## Validando uma API-KEY no serviço protegido
