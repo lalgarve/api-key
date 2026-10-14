@@ -565,10 +565,12 @@ em `api_key_schema_history`. Deploy simulado num repositório local: saem `api-k
 ganha `--permissions`; as permissões vêm de um catálogo configurado por instância, com uma ou
 mais marcadas como padrão. Sem `--permissions`, a chave recebe as padrão. Com a opção, recebe
 só as listadas. A biblioteca de validação passa a devolver as permissões da chave. Sem
-catálogo, tudo funciona como na 1.1.0, por isso é uma versão menor. Ficaram duas decisões em
-aberto: como tratar as chaves emitidas antes da 1.2.0 e o formato da opção.
+catálogo, tudo funciona como na 1.1.0, por isso é uma versão menor. As duas decisões em aberto
+foram resolvidas pela Leila: chaves emitidas antes da 1.2.0 recebem as permissões padrão na
+validação, e a opção é uma lista separada por vírgula.
 
 **Commits:**
 - `0e8457c` docs: add draft spec for per-key permissions (013) (#14)
+- `43c70b3` decision: resolve the open decisions of spec 013 (#14)
 
 **Issues:** #14 em andamento (spec em rascunho).
