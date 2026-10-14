@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +90,32 @@ class ApiKeyValidatorWiringTest {
                     .expiringAt(CONSUMER_NOW.plus(1, ChronoUnit.DAYS)).saveWith(repository, hasher);
 
             assertThat(validator.validate(issued.rawKey())).isEqualTo(new Valid("jogo-acoes"));
+        }
+    }
+
+    @Nested
+    @SpringBootTest(classes = ConsumerTestApplication.class, properties = {
+            "API_KEY_HMAC_PEPPER=test-pepper",
+            "api-key.permissions[0].name=email:send",
+            "api-key.permissions[0].default=true",
+            "api-key.permissions[1].name=disposable-email:admin"})
+    @Transactional
+    class WithAPermissionCatalog {
+
+        @Autowired
+        private ApiKeyValidator validator;
+
+        @Autowired
+        private ApiKeyRepository repository;
+
+        @Autowired
+        private ApiKeyHasher hasher;
+
+        @Test
+        void readsTheServicesCatalogForKeysWithoutStoredPermissions() {
+            IssuedKey issued = activeKey(Instant.now()).saveWith(repository, hasher);
+
+            assertThat(validator.validate(issued.rawKey())).isEqualTo(new Valid("jogo-acoes", Set.of("email:send")));
         }
     }
 }

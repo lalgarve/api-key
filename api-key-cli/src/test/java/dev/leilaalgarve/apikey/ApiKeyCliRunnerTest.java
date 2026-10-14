@@ -6,10 +6,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.leilaalgarve.apikey.core.PermissionCatalog;
+import dev.leilaalgarve.apikey.core.PermissionCatalog.Entry;
 import dev.leilaalgarve.apikey.issuance.GenerateCommand;
 import dev.leilaalgarve.apikey.management.ListCommand;
 import dev.leilaalgarve.apikey.management.RevokeCommand;
 import dev.leilaalgarve.apikey.management.ValidateCommand;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -134,6 +139,40 @@ class ApiKeyCliRunnerTest {
         verifyNoInteractions(revokeCommand);
         verifyNoInteractions(listCommand);
         verifyNoInteractions(validateCommand);
+    }
+
+    @Test
+    void anInvalidPermissionCatalogExitsTwoBeforeAnyCommandRuns() {
+        GenerateCommand generateCommand = mock(GenerateCommand.class);
+        RevokeCommand revokeCommand = mock(RevokeCommand.class);
+        PermissionCatalog withoutDefault = new PermissionCatalog(List.of(new Entry("email:send", false)));
+        List<Integer> exitCalls = new ArrayList<>();
+        ByteArrayOutputStream errBytes = new ByteArrayOutputStream();
+        PrintStream originalErr = System.err;
+
+        System.setErr(new PrintStream(errBytes, true, StandardCharsets.UTF_8));
+        try {
+            new ApiKeyCliRunner(generateCommand, revokeCommand, mock(ListCommand.class),
+                    mock(ValidateCommand.class), withoutDefault, exitCalls::add)
+                    .run("revoke", "--id", "3");
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        assertThat(exitCalls).containsExactly(2);
+        assertThat(errBytes.toString(StandardCharsets.UTF_8))
+                .isEqualTo("Error: api-key.permissions must mark at least one permission as default.\n");
+        verifyNoInteractions(generateCommand);
+        verifyNoInteractions(revokeCommand);
+    }
+
+    @Test
+    void anInvalidPermissionCatalogDoesNotTurnAnUnknownCommandIntoAnError() {
+        PermissionCatalog withoutDefault = new PermissionCatalog(List.of(new Entry("email:send", false)));
+
+        new ApiKeyCliRunner(mock(GenerateCommand.class), mock(RevokeCommand.class), mock(ListCommand.class),
+                mock(ValidateCommand.class), withoutDefault, failOnExit())
+                .run("--not-a-command");
     }
 
     private static ProcessExiter failOnExit() {

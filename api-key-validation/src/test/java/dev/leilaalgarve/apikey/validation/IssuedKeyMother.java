@@ -8,6 +8,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.Set;
 
 /**
  * Object Mother + Test Data Builder (memory/constitution.md) for keys as the CLI would have
@@ -43,6 +44,7 @@ public final class IssuedKeyMother {
         private Instant createdAt;
         private Instant expiresAt;
         private Instant revokedAt;
+        private Set<String> permissions = Set.of();
 
         private Builder(Instant now) {
             this.createdAt = now.minus(1, ChronoUnit.DAYS);
@@ -68,9 +70,15 @@ public final class IssuedKeyMother {
             return this;
         }
 
+        /** Stored permissions; none by default, like a key issued before 1.1.0. */
+        public Builder withPermissions(String... permissions) {
+            this.permissions = Set.of(permissions);
+            return this;
+        }
+
         public IssuedKey saveWith(ApiKeyRepository repository, ApiKeyHasher hasher) {
             String rawKey = wellFormedRawKey();
-            ApiKey row = new ApiKey(clientName, hasher.hash(rawKey), createdAt, expiresAt);
+            ApiKey row = new ApiKey(clientName, hasher.hash(rawKey), createdAt, expiresAt, permissions);
             if (revokedAt != null) {
                 row.revokeAt(revokedAt);
             }

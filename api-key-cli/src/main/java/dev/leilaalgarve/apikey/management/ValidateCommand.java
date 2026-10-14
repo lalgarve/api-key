@@ -47,6 +47,11 @@ public class ValidateCommand implements CliCommand {
         return switch (result) {
             case Valid valid -> {
                 CliOutput.println(out, "API key is valid for client '" + valid.clientName() + "'.");
+                // Only when there are permissions, so an instance without a catalog prints
+                // exactly what 010 does (specs/013-key-permissions FR14).
+                if (!valid.permissions().isEmpty()) {
+                    CliOutput.println(out, "Permissions: " + String.join(", ", valid.permissions()) + ".");
+                }
                 yield 0;
             }
             case Invalid invalid -> {

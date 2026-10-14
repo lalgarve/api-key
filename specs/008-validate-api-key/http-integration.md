@@ -32,7 +32,9 @@ mantida — quando houver um consumidor real, a integração escolhida pode vira
    ela é verificada a cada `mvn verify`.
 
 3. Mesmo banco populado pela CLI e a mesma variável `API_KEY_HMAC_PEPPER` — com outro pepper,
-   todo hash calculado diverge e toda chave volta `NOT_FOUND`.
+   todo hash calculado diverge e toda chave volta `NOT_FOUND`. Se a instância usa permissões
+   (`specs/013-key-permissions`), também a mesma configuração `api-key.permissions`: as chaves
+   sem permissão gravada recebem as padrão dela.
 4. Escolher o header que carrega a chave. Os exemplos usam `X-API-Key`; a biblioteca não
    impõe nenhum.
 
@@ -56,6 +58,23 @@ decisão de cada serviço. Sugestão de partida:
   chave em texto puro — mesmo princípio de `spec.md` FR6.
 - Limite de requisições (`429`) não é motivo de validação de chave (ver `plan.md`, decisão
   `RATE_LIMITED`) — se o serviço precisar, fica numa camada própria, antes ou depois desta.
+
+## Permissões (`013-key-permissions`)
+
+`Valid.permissions()` traz o que a chave pode fazer, e `Valid.hasPermission(nome)` confere uma
+permissão exata. A biblioteca não decide se a chamada é permitida: cada rota do serviço confere
+a permissão que exige. Sugestão de partida: chave válida sem a permissão da rota responde
+**403** (o chamador está autenticado, só não pode fazer aquilo), com o mesmo cuidado de não
+logar a chave.
+
+```java
+case ApiKeyValidationResult.Valid valid when !valid.hasPermission("disposable-email:admin") -> {
+    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+}
+```
+
+Num `HandlerInterceptor` (alternativa B), a permissão exigida pode vir de uma anotação no
+método do controller, lida pelo `HandlerMethod`.
 
 ## Alternativa A: `OncePerRequestFilter`
 

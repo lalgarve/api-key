@@ -600,3 +600,53 @@ pulados). A segunda tentativa do modo normal esbarrou num efeito colateral meu: 
 - `9b6f470` feat: add the validate CLI command (T001-T007)
 
 **Issues:** #39 — todas as tarefas concluídas.
+
+### Spec 013: permissões por chave
+
+**Resumo:** Spec `013-key-permissions` (issue #14), que entra na versão 1.1.0 junto com a
+`010`. `generate`
+ganha `--permissions`; as permissões vêm de um catálogo configurado por instância, com uma ou
+mais marcadas como padrão. Sem `--permissions`, a chave recebe as padrão. Com a opção, recebe
+só as listadas. A biblioteca de validação passa a devolver as permissões da chave. Sem
+catálogo, tudo funciona como na 1.1.0, por isso é uma versão menor. As duas decisões em aberto
+foram resolvidas pela Leila: chaves emitidas antes da 1.2.0 recebem as permissões padrão na
+validação, e a opção é uma lista separada por vírgula.
+
+Depois do merge da `010` na `main`, a Leila decidiu juntar as duas na 1.1.0, e as referências de
+versão da spec foram ajustadas. `plan.md` e `tasks.md` foram escritos: permissões numa tabela
+nova mapeada como `@ElementCollection` (busca em `SUBSELECT`, sem uma consulta por chave em
+`list`), catálogo lido por um `PermissionCatalog` em `api-key-core`, e catálogo inválido tratado
+como o pepper ausente (o contexto sobe; a CLI sai com 2 antes de despachar). Spec marcada como
+aprovada.
+
+Implementação, na mesma linha de trabalho: tabela `api_key_permissions` (V3), `ApiKey` com as
+permissões, `PermissionCatalog` lendo `api-key.permissions` (YAML ou variáveis
+`API_KEY_PERMISSIONS_<n>_NAME`/`_DEFAULT`), `Valid` com `permissions()`/`hasPermission()`, e na
+CLI `--permissions`, a coluna `PERMISSIONS` de `list`, a segunda linha de `validate` e o exit 2
+para catálogo inválido. Cada comando manteve o construtor antigo (sem catálogo), então nenhum
+teste existente mudou.
+
+Revisando o próprio diff apareceu um bug: com id `IDENTITY`, a linha da chave é inserida no
+`save`, antes do `flush` que grava as permissões. Se o `flush` falhasse sem rotação, a chave
+ficava gravada sem ter sido impressa. Um teste com transação real reproduziu o problema, e a
+correção marca rollback sempre que há transação.
+
+Validado no sandbox (Postgres nativo, criado o usuário e o banco do projeto): `mvn clean verify`
+verde (56 + 47 + 155 testes, 65 cenários Cucumber, cobertura mínima ok). Suíte caixa-preta
+completa verde (6 features, 55 cenários, 16 `@pending` pulados), com os `.feature` antigos sem
+mudança. Ela rodou com o jar anterior à correção do rollback, que só muda o caminho de falha de
+gravação, coberto pelo teste JUnit.
+
+**Commits:**
+- `0e8457c` docs: add draft spec for per-key permissions (013) (#14)
+- `43c70b3` decision: resolve the open decisions of spec 013 (#14)
+- `aa8aa06` docs: add plan and tasks for key permissions (013) (#14)
+- `ab48115` feat: store per-key permissions and read the permission catalog (013) (#14)
+- `5996502` feat: return a valid key's permissions from the validator (013) (#14)
+- `73e5aff` feat: grant, list and show key permissions in the CLI (013) (#14)
+- `9081236` test: add executable scenarios for key permissions (013) (#14)
+- `c118f90` test: add black-box scenarios for key permissions (013) (#14)
+- `786d8c8` docs: document key permissions and mark spec 013 implemented (#14)
+- `39b3ac5` fix: roll back the new key when flushing it fails (013) (#14)
+
+**Issues:** #14 — todas as tarefas concluídas; falta a preparação da release 1.1.0.

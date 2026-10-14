@@ -117,4 +117,39 @@ class ApiKeysMigrationTest {
                 "SELECT revoked_at FROM api_keys WHERE key_hash = ?", Timestamp.class, "hash-to-revoke");
         assertThat(reloaded).isEqualTo(revokedAt);
     }
+
+    @Test
+    void permissionsTableCascadesWhenTheKeyIsDeleted() {
+        Long id = insertKey("hash-with-permissions");
+        jdbcTemplate.update("INSERT INTO api_key_permissions (api_key_id, permission) VALUES (?, ?)", id, "email:send");
+
+        jdbcTemplate.update("DELETE FROM api_keys WHERE id = ?", id);
+
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM api_key_permissions WHERE api_key_id = ?", Integer.class, id);
+        assertThat(count).isZero();
+    }
+
+    @Test
+    void theSamePermissionCannotRepeatForOneKey() {
+        Long id = insertKey("hash-repeated-permission");
+        jdbcTemplate.update("INSERT INTO api_key_permissions (api_key_id, permission) VALUES (?, ?)", id, "email:send");
+
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO api_key_permissions (api_key_id, permission) VALUES (?, ?)", id, "email:send"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void aPermissionMustReferenceAnExistingKey() {
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "INSERT INTO api_key_permissions (api_key_id, permission) VALUES (?, ?)", Long.MAX_VALUE, "email:send"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private Long insertKey(String keyHash) {
+        return jdbcTemplate.queryForObject(
+                "INSERT INTO api_keys (client_name, key_hash, created_at) VALUES (?, ?, ?) RETURNING id",
+                Long.class, "jogo-acoes", keyHash, Timestamp.from(Instant.now()));
+    }
 }

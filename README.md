@@ -31,7 +31,7 @@ para o contexto acadêmico completo.
 
 ```
 export API_KEY_HMAC_PEPPER=<segredo-do-ambiente>
-java -jar api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7]
+java -jar api-key.jar generate --client jogo-acoes [--validity-days 90] [--revoke-old-in-days 7] [--permissions email:send,...]
 java -jar api-key.jar revoke --id 3 [--in-days 14]
 java -jar api-key.jar list [--status active|expired|revoked|all] [--client jogo-acoes] [--revoking-within-days 30]
 java -jar api-key.jar validate < arquivo-com-a-chave
@@ -62,11 +62,38 @@ um exit code distinto por motivo (`0` válida, `1` nenhuma chave informada, `2` 
 inválido, `3` nenhuma chave corresponde, `4` revogada, `5` expirada) — nunca imprime a chave,
 o hash nem o `id`.
 
+### Permissões por chave
+
+Cada instância pode declarar as permissões que suas chaves podem receber, com pelo menos uma
+marcada como padrão. Exemplo do serviço de e-mail, em `application.yml`:
+
+```yaml
+api-key:
+  permissions:
+    - name: email:send               # mudar o próprio template e enviar e-mails
+      default: true
+    - name: disposable-email:admin   # administrar os e-mails descartáveis
+```
+
+Ou por variáveis de ambiente: `API_KEY_PERMISSIONS_0_NAME=email:send`,
+`API_KEY_PERMISSIONS_0_DEFAULT=true`, `API_KEY_PERMISSIONS_1_NAME=disposable-email:admin`.
+
+- `generate` sem `--permissions` dá à chave as permissões padrão; com `--permissions a,b`, só
+  as listadas. Uma permissão fora da lista é recusada (exit 1). As permissões de uma chave não
+  mudam depois: para trocar, gere outra chave com `--revoke-old-in-days`.
+- `list` ganha a coluna `PERMISSIONS` no fim, e `validate` uma segunda linha `Permissions: ...`.
+- Chaves geradas antes da 1.1.0 (ou sem nenhuma permissão gravada) valem como se tivessem as
+  permissões padrão.
+- Sem `api-key.permissions`, nada disso aparece: os comandos se comportam como antes.
+- Uma configuração inválida (nome fora do formato, nome repetido, nenhuma padrão) faz qualquer
+  comando sair com exit 2.
+
 Ver [`specs/001-generate-api-key/contracts/cli-commands.md`](specs/001-generate-api-key/contracts/cli-commands.md)
 (estendido por [`specs/003-auto-revoke-on-rotation/contracts/cli-commands.md`](specs/003-auto-revoke-on-rotation/contracts/cli-commands.md)),
 [`specs/002-revoke-api-key/contracts/cli-commands.md`](specs/002-revoke-api-key/contracts/cli-commands.md),
 [`specs/004-list-api-keys/contracts/cli-commands.md`](specs/004-list-api-keys/contracts/cli-commands.md)
-e [`specs/010-validate-api-key-cli/contracts/cli-commands.md`](specs/010-validate-api-key-cli/contracts/cli-commands.md)
+[`specs/010-validate-api-key-cli/contracts/cli-commands.md`](specs/010-validate-api-key-cli/contracts/cli-commands.md)
+e [`specs/013-key-permissions/contracts/cli-commands.md`](specs/013-key-permissions/contracts/cli-commands.md)
 para os contratos completos (argumentos, saída, exit codes) de cada comando.
 
 ## Validando uma API-KEY no serviço protegido
@@ -85,7 +112,8 @@ chama `ApiKeyValidator.validate(chaveRecebida)`, que devolve um resultado tipado
 ```java
 switch (validator.validate(request.getHeader("X-API-Key"))) {
     case ApiKeyValidationResult.Valid valid -> {
-        // valid.clientName() é o --client usado ao gerar a chave
+        // valid.clientName() é o --client usado ao gerar a chave;
+        // valid.hasPermission("disposable-email:admin") diz o que ela pode fazer
     }
     case ApiKeyValidationResult.Invalid invalid -> {
         // invalid.reason(): MISSING, MALFORMED, NOT_FOUND, EXPIRED ou REVOKED
@@ -93,7 +121,8 @@ switch (validator.validate(request.getHeader("X-API-Key"))) {
 }
 ```
 
-Ele precisa do mesmo banco e do mesmo `API_KEY_HMAC_PEPPER` desta instância. O que responder
+Ele precisa do mesmo banco, do mesmo `API_KEY_HMAC_PEPPER` e da mesma configuração
+`api-key.permissions` desta instância (as chaves sem permissão gravada recebem as padrão de lá). O que responder
 ao chamador para cada motivo fica com o serviço — ver o
 [guia de integração HTTP](specs/008-validate-api-key/http-integration.md) (filtro ou
 interceptor + `@RestControllerAdvice`) e o
@@ -217,7 +246,11 @@ continua sendo o jar da CLI, rodado à parte contra o mesmo banco.
 Os scripts ficam em `db/migration-api-key` e o histórico do Flyway da CLI na tabela
 `api_key_schema_history`, para não colidir com um serviço que use o Flyway no mesmo banco
 (`db/migration` e `flyway_schema_history` são os padrões dele). A CLI faz baseline na versão 0
-quando o schema já tem tabelas do serviço, e aplica V1 e V2 por cima.
+quando o schema já tem tabelas do serviço, e aplica as migrations por cima.
+
+As migrations só rodam pela CLI. Ao atualizar para a 1.1.0, rode qualquer comando da CLI 1.1.0
+(um `list` basta) **antes** de publicar o serviço com a biblioteca 1.1.0: ela mapeia a tabela
+nova `api_key_permissions` (V3), e o serviço não sobe sem ela.
 
 Um banco criado pela 1.0.0 tem o histórico em `flyway_schema_history`. Antes de rodar a 1.0.1
 nele, renomear a tabela uma vez:
