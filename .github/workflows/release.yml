@@ -3,17 +3,18 @@ name: Release
 # On demand only: run it from the Actions tab, "Run workflow", on main. It reads the version
 # from pom.xml, refuses a -SNAPSHOT, runs the same checks as ci.yml, then creates the tag
 # v<version> on the selected commit, publishes the libraries (api-key-core, api-key-validation)
-# to GitHub Packages and creates a GitHub release with the CLI jar and the library jars attached.
+# to Maven Central and creates a GitHub release with the CLI jar and the library jars attached.
 on:
   workflow_dispatch:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # The Central token and the signing key are secrets of this environment.
+    environment: Release
     steps:
       - uses: actions/checkout@v4
 
@@ -28,11 +29,13 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-          # Writes a settings.xml whose server "github" (the id in pom.xml's
-          # distributionManagement) authenticates with the workflow's token.
-          server-id: github
-          server-username: GITHUB_ACTOR
-          server-password: GITHUB_TOKEN
+          # Writes a settings.xml in the runner whose server "central" (publishingServerId in
+          # pom.xml) reads the token from the environment, and imports the signing key.
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Read the version from pom.xml
         id: version
@@ -60,11 +63,13 @@ jobs:
         run: docker compose down -v
 
       # Only after the tests passed for every module, so a failing module never leaves a
-      # half-published version behind. GitHub Packages refuses to overwrite a version.
-      - name: Publish the libraries to GitHub Packages
+      # half-published version behind. Maven Central never lets a version be replaced or removed.
+      - name: Publish the libraries to Maven Central
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mvn -B deploy -DskipTests
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: mvn -B deploy -DskipTests -Prelease
 
       - name: Create tag and GitHub release
         uses: softprops/action-gh-release@v2

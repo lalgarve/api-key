@@ -211,32 +211,22 @@ A versão vem do `pom.xml` raiz (e do `<parent>` de cada módulo). Para publicar
    isso até o `main`.
 2. No GitHub Actions, rodar o workflow manual "Release" sobre o `main`. Ele recusa versão
    `-SNAPSHOT` ou tag já existente, roda o mesmo `mvn verify` do CI contra Postgres real e só
-   então publica `api-key-core` e `api-key-validation` no GitHub Packages e cria a tag
+   então publica `api-key-core` e `api-key-validation` no Maven Central e cria a tag
    `v<versão>` e a release no GitHub, com o jar da CLI (`api-key-<versão>.jar`) e os jars das
    duas bibliotecas anexados, mais as notas geradas a partir das PRs.
 
 ### Usar a biblioteca num serviço
 
-O serviço protegido declara o repositório do GitHub Packages e a dependência:
+A partir da 1.1.1, as bibliotecas estão no Maven Central. O serviço protegido só declara a
+dependência, sem repositório extra nem credencial:
 
 ```xml
-<repositories>
-  <repository>
-    <id>github-api-key</id>
-    <url>https://maven.pkg.github.com/lalgarve/api-key</url>
-  </repository>
-</repositories>
-
 <dependency>
   <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>api-key-validation</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
 </dependency>
 ```
-
-O GitHub Packages exige autenticação até para ler: no `~/.m2/settings.xml` (ou no CI do
-serviço), um `<server>` com o mesmo `id` (`github-api-key`), o usuário do GitHub e um token
-com `read:packages`.
 
 O serviço sobe pela própria classe Spring Boot e só valida chaves. Gerar, revogar e listar
 continua sendo o jar da CLI, rodado à parte contra o mesmo banco.
