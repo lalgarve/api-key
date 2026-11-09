@@ -1,7 +1,7 @@
 # Spec: publish-maven-central
 
 **Status:** rascunho
-**Issue:** a criar
+**Issue:** #44
 **Versão alvo:** 1.1.1 (sem mudança de código das bibliotecas)
 
 ## Resumo
