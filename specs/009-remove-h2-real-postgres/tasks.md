@@ -5,18 +5,18 @@ Quebra `plan.md` em tarefas pequenas, ordenadas, prontas para virar Issues (ver
 
 | ID | Descrição | Depende de | Paralelizável | Issue |
 |---|---|---|---|---|
-| T001 | `src/test/resources/application.yml` de `api-key-core`, `api-key-validation` e `api-key-cli`: trocar o `datasource` de H2 pelos valores de Postgres de `application-docker.yml` (`${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}`, `deployo_api_key_admin`, `org.postgresql.Driver`) + `flyway.locations: classpath:db/migration` | — | [P] | #27 |
-| T002 | Remover `src/test/resources/application-docker.yml` de `api-key-core` e `api-key-validation` (idênticos ao `application.yml` de teste depois do T001). Em `api-key-cli/src/main/resources/application-docker.yml`, tirar `driver-class-name`/`flyway.locations` explícitos e os comentários sobre H2 | T001 | | #27 |
-| T003 | `DeployoApiKeyApplicationTests`: tirar as sobrescritas `jdbc:h2`/`org.h2.Driver` e apagar no fim a chave que o teste gerou (pelo `client_name`). `ApiKeyCliRunnerTest.unknownCommandWordDoesNothing`: trocar `jdbc:h2:mem:unused` por um argumento neutro | T001 | [P] | #27 |
-| T004 | `api-key-cli/src/main/resources/application-sandbox.yml`: trocar H2 pelos mesmos valores de `application-docker.yml` (`jdbc:postgresql://localhost:5432/deployo_api_key`, `deployo_api_key_admin`, `org.postgresql.Driver`, `db/migration`). Reescrever o comentário do topo: Postgres nativo do ambiente sandbox, provisionado pelo script de setup do ambiente (ver `plan.md`, "Contexto técnico"), e não mais "No Docker/Postgres available here" | — | [P] | #27 |
-| T005 | Remover `api-key-core/src/main/resources/db/migration-h2/` | T001, T004 | | #27 |
-| T006 | Remover `com.h2database:h2` dos três `pom.xml` (+ o comentário "on H2" em `api-key-validation/pom.xml`) | T001, T003, T004 | | #27 |
-| T007 | Atualizar comentários de teste que dizem "H2" (`GenerateCommandTest`, `RevokeCommandTest`, `GenerateCommandRotationAtomicityTest`, `*PersistenceFailureTest`, `ApiKeysMigrationTest`, `ScenarioState`, `CucumberSpringConfiguration`) | T001 | [P] | #27 |
-| T008 | `docker compose up -d --wait db` + `mvn clean verify` **duas vezes seguidas**, sem `docker compose down -v` entre as rodadas, sem `SPRING_PROFILES_ACTIVE`. Confirmar as duas verdes (prova de que nenhum teste depende de banco vazio). Adicionar limpeza em qualquer teste que falhar só na segunda | T001, T002, T003, T006 | | #27 |
-| T009 | **Verificação no ambiente sandbox (manual, numa sessão da Claude rodando no sandbox).** Ver o roteiro abaixo da tabela | T004, T005, T006, T008 | | #27 |
-| T010 | Com `db` **parado**: `mvn test` falha com erro de conexão claro (não `BUILD SUCCESS`, não H2) | T006 | [P] | #27 |
-| T011 | Confirmar CI verde na PR (`ci.yml` sem mudança esperada; ver `plan.md`, linha do `SPRING_PROFILES_ACTIVE`) | T008 | | #27 |
-| T012 | Documentação: `memory/constitution.md` ("Nomenclatura de ambientes": `sandbox` não é mais "H2 embarcado"; "CI e cobertura de testes": tirar "perfil `sandbox` (H2)"), README (rodar testes exige `docker compose up -d --wait db`), `docs/context/diario.md` | T004 | [P] | #27 |
+| ~~T001~~ | `src/test/resources/application.yml` de `api-key-core`, `api-key-validation` e `api-key-cli`: trocar o `datasource` de H2 pelos valores de Postgres de `application-docker.yml` (`${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/deployo_api_key}`, `deployo_api_key_admin`, `org.postgresql.Driver`) + `flyway.locations: classpath:db/migration` | — | [P] | #27 |
+| ~~T002~~ | Remover `src/test/resources/application-docker.yml` de `api-key-core` e `api-key-validation` (idênticos ao `application.yml` de teste depois do T001). Em `api-key-cli/src/main/resources/application-docker.yml`, tirar `driver-class-name`/`flyway.locations` explícitos e os comentários sobre H2 | T001 | | #27 |
+| ~~T003~~ | `DeployoApiKeyApplicationTests`: tirar as sobrescritas `jdbc:h2`/`org.h2.Driver` e apagar no fim a chave que o teste gerou (pelo `client_name`). `ApiKeyCliRunnerTest.unknownCommandWordDoesNothing`: trocar `jdbc:h2:mem:unused` por um argumento neutro | T001 | [P] | #27 |
+| ~~T004~~ | `api-key-cli/src/main/resources/application-sandbox.yml`: trocar H2 pelos mesmos valores de `application-docker.yml` (`jdbc:postgresql://localhost:5432/deployo_api_key`, `deployo_api_key_admin`, `org.postgresql.Driver`, `db/migration`). Reescrever o comentário do topo: Postgres nativo do ambiente sandbox, provisionado pelo script de setup do ambiente (ver `plan.md`, "Contexto técnico"), e não mais "No Docker/Postgres available here" | — | [P] | #27 |
+| ~~T005~~ | Remover `api-key-core/src/main/resources/db/migration-h2/` | T001, T004 | | #27 |
+| ~~T006~~ | Remover `com.h2database:h2` dos três `pom.xml` (+ o comentário "on H2" em `api-key-validation/pom.xml`) | T001, T003, T004 | | #27 |
+| ~~T007~~ | Atualizar comentários de teste que dizem "H2" (`GenerateCommandTest`, `RevokeCommandTest`, `GenerateCommandRotationAtomicityTest`, `*PersistenceFailureTest`, `ApiKeysMigrationTest`, `ScenarioState`, `CucumberSpringConfiguration`) | T001 | [P] | #27 |
+| ~~T008~~ | `docker compose up -d --wait db` + `mvn clean verify` **duas vezes seguidas**, sem `docker compose down -v` entre as rodadas, sem `SPRING_PROFILES_ACTIVE`. Confirmar as duas verdes (prova de que nenhum teste depende de banco vazio). Adicionar limpeza em qualquer teste que falhar só na segunda | T001, T002, T003, T006 | | #27 |
+| ~~T009~~ | **Verificação no ambiente sandbox (manual, numa sessão da Claude rodando no sandbox).** Ver o roteiro abaixo da tabela | T004, T005, T006, T008 | | #27 |
+| ~~T010~~ | Com `db` **parado**: `mvn test` falha com erro de conexão claro (não `BUILD SUCCESS`, não H2) | T006 | [P] | #27 |
+| ~~T011~~ | Confirmar CI verde na PR (`ci.yml` sem mudança esperada; ver `plan.md`, linha do `SPRING_PROFILES_ACTIVE`) | T008 | | #27 |
+| ~~T012~~ | Documentação: `memory/constitution.md` ("Nomenclatura de ambientes": `sandbox` não é mais "H2 embarcado"; "CI e cobertura de testes": tirar "perfil `sandbox` (H2)"), README (rodar testes exige `docker compose up -d --wait db`), `docs/context/diario.md` | T004 | [P] | #27 |
 
 ### Registro da verificação local (2026-10-03, Windows 11)
 
@@ -44,7 +44,7 @@ O container foi removido no fim.
   pré-condição e falharia alto em vez de passar pelo motivo errado.
 - **T010:** com o container parado, `mvn test` dá `BUILD FAILURE` já em `api-key-core`
   (13 erros), com `Connection to localhost:55432 refused`. Não houve fallback nem skip.
-- **T009** (sandbox) e **T011** (CI) ficam pendentes: T009 é manual, no ambiente sandbox, e T011
+- **T009** (sandbox) e **T011** (CI) ficaram pendentes neste registro: T009 é manual, no ambiente sandbox, e T011
   depende da PR.
 
 ### Registro da verificação no sandbox (T009, 2026-10-03, ambiente sandbox da Claude)
@@ -80,6 +80,12 @@ cluster `16/email`, na 5433, também roda e não foi tocado).
 7. **`./data/`:** não existe, nem antes nem depois dos passos 4 a 6.
 
 Nenhum passo falhou e nenhum erro de permissão do `deployo_api_key_admin` apareceu.
+
+### Registro do CI (T011, conferido em 2026-11-09)
+
+A spec entrou no `main` pela PR #28 em 2026-10-03. O CI do `main` passou depois disso
+([execução de 2026-10-03](https://github.com/lalgarve/api-key/actions/runs/37148330610)), contra Postgres real (`docker compose up -d --wait db`,
+`SPRING_PROFILES_ACTIVE=docker`), e passou em todas as execuções seguintes.
 
 ### T009 — roteiro da verificação no sandbox
 

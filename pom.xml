@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -13,10 +14,37 @@
 
   <groupId>dev.leilaalgarve.apikey</groupId>
   <artifactId>api-key-parent</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
   <packaging>pom</packaging>
   <name>api-key-parent</name>
   <description>Biblioteca e aplicacao Java para criar API-KEY pela linha de comando</description>
+
+  <!-- Maven Central requires these, and without them the values of spring-boot-starter-parent
+       would be inherited: the published POM would claim Spring's URL, developers and Apache 2.0
+       (specs/014-publish-maven-central/plan.md). -->
+  <url>https://github.com/lalgarve/api-key</url>
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3.0</name>
+      <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>lalgarve</id>
+      <name>Leila Algarve</name>
+      <url>https://github.com/lalgarve</url>
+    </developer>
+  </developers>
+  <scm child.scm.connection.inherit.append.path="false"
+       child.scm.developerConnection.inherit.append.path="false"
+       child.scm.url.inherit.append.path="false">
+    <connection>scm:git:https://github.com/lalgarve/api-key.git</connection>
+    <developerConnection>scm:git:git@github.com:lalgarve/api-key.git</developerConnection>
+    <url>https://github.com/lalgarve/api-key</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <!-- Split per specs/008-validate-api-key/plan.md, "Estrutura de módulos/pacotes": the
        protected service depends on api-key-validation only, without the CLI or Flyway. -->
@@ -25,17 +53,6 @@
     <module>api-key-validation</module>
     <module>api-key-cli</module>
   </modules>
-
-  <!-- Where the Release workflow publishes the libraries (api-key-core, api-key-validation and
-       this parent POM, which they reference). The CLI fat jar is skipped: it ships as a release
-       asset instead. -->
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <name>GitHub Packages</name>
-      <url>https://maven.pkg.github.com/lalgarve/api-key</url>
-    </repository>
-  </distributionManagement>
 
   <properties>
     <java.version>21</java.version>
@@ -110,5 +127,73 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <!-- Only the Release workflow activates this profile, so an ordinary build needs neither a GPG
+         key nor Central credentials (specs/014-publish-maven-central/plan.md). -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <doclint>none</doclint>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.12.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+              <!-- Executable fat jar, not a library: it ships as a release asset. -->
+              <excludeArtifacts>
+                <excludeArtifact>api-key-cli</excludeArtifact>
+              </excludeArtifacts>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

@@ -1,6 +1,6 @@
 # Spec: H2 sai do projeto — Postgres real sempre (testes, sandbox e Docker)
 
-**Status:** aprovada — implementada (T001-T008, T010, T012); falta T009 (sandbox) e T011 (CI)
+**Status:** aprovada — implementada (T001-T012 concluídas)
 **Issue:** #27
 
 ## Resumo
